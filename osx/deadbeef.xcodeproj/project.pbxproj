@@ -894,6 +894,7 @@
 		2D30D20F25E2A8930023A299 /* WidgetTopLevelView.m in Sources */ = {isa = PBXBuildFile; fileRef = 2D30D20B25E2A8930023A299 /* WidgetTopLevelView.m */; };
 		2D3138251D08AB3400CBD871 /* artwork.dylib in Copy Plugins */ = {isa = PBXBuildFile; fileRef = 2D621F831CD92C9000EB6D22 /* artwork.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		2D3992E125C2038700CFA936 /* WeakRefWrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 2D3992DF25C2038700CFA936 /* WeakRefWrapper.h */; };
+		2D3A4BBD1D6315D6002C7098 /* medialib.dylib in Copy Plugins */ = {isa = PBXBuildFile; fileRef = 2D3A4BB41D631530002C7098 /* medialib.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		2D3CD9372409A091005875A9 /* PinnedGroupTitleView.h in Headers */ = {isa = PBXBuildFile; fileRef = 2D3CD9352409A091005875A9 /* PinnedGroupTitleView.h */; };
 		2D3CD9382409A091005875A9 /* PinnedGroupTitleView.m in Sources */ = {isa = PBXBuildFile; fileRef = 2D3CD9362409A091005875A9 /* PinnedGroupTitleView.m */; };
 		2D3E0E1C1B39AAC20007ECC3 /* btnBrowseTemplate.pdf in Resources */ = {isa = PBXBuildFile; fileRef = 2D3E0E1B1B39AAC20007ECC3 /* btnBrowseTemplate.pdf */; };
@@ -922,6 +923,7 @@
 		2D48DBFA2269B731002CACFD /* supereq.dylib in Copy Plugins */ = {isa = PBXBuildFile; fileRef = 2DF16CB01DCB62D9007D7F05 /* supereq.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		2D48DBFB2269B731002CACFD /* ddb_mono2stereo.dylib in Copy Plugins */ = {isa = PBXBuildFile; fileRef = 2D1DC0961DCB39EC00441A08 /* ddb_mono2stereo.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		2D48DBFC2269B731002CACFD /* rg_scanner.dylib in Copy Plugins */ = {isa = PBXBuildFile; fileRef = 2D27AED41D9D86ED00842D76 /* rg_scanner.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		2D48DBFD2269B731002CACFD /* medialib.dylib in Copy Plugins */ = {isa = PBXBuildFile; fileRef = 2D3A4BB41D631530002C7098 /* medialib.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		2D48DBFE2269B731002CACFD /* artwork.dylib in Copy Plugins */ = {isa = PBXBuildFile; fileRef = 2D621F831CD92C9000EB6D22 /* artwork.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		2D48DC002269B731002CACFD /* adplug.dylib in Copy Plugins */ = {isa = PBXBuildFile; fileRef = 2D652FCB1CE79E8500163808 /* adplug.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		2D48DC012269B731002CACFD /* ffmpeg.dylib in Copy Plugins */ = {isa = PBXBuildFile; fileRef = 2D026D891CAC5BBF00E27961 /* ffmpeg.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
@@ -2619,6 +2621,7 @@
 		2DE77496275E8AFB00890350 /* converter_gtk3.dylib in Copy Plugins */ = {isa = PBXBuildFile; fileRef = 2DE77467275E893400890350 /* converter_gtk3.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		2DE7A7B119A689E600F8C0B8 /* bufferingTemplate.pdf in Resources */ = {isa = PBXBuildFile; fileRef = 2DE7A7B019A689E600F8C0B8 /* bufferingTemplate.pdf */; };
 		2DE92F561BAFFBEE00F37154 /* wavpack.dylib in Copy Plugins */ = {isa = PBXBuildFile; fileRef = 2DE92F2F1BAFFB4F00F37154 /* wavpack.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		2DEAA7CE2789A256005416CA /* MediaLibTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 2DAA405A269B6308006D2754 /* MediaLibTests.m */; };
 		2DEBA1BF23E203B9000E4135 /* eqpreset.h in Headers */ = {isa = PBXBuildFile; fileRef = 2DEBA1BD23E203B9000E4135 /* eqpreset.h */; };
 		2DEBA1CE23E20466000E4135 /* eqpreset.c in Sources */ = {isa = PBXBuildFile; fileRef = 2DEBA1BE23E203B9000E4135 /* eqpreset.c */; };
 		2DEBA1D223E207A3000E4135 /* EqualizerWindowController.h in Headers */ = {isa = PBXBuildFile; fileRef = 2DEBA1CF23E207A3000E4135 /* EqualizerWindowController.h */; };
@@ -3251,6 +3254,13 @@
 			remoteGlobalIDString = 2D621F821CD92C9000EB6D22;
 			remoteInfo = artwork;
 		};
+		2D3A4BBB1D6315CE002C7098 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4D1B3E7218379829003E6066 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2D3A4BB31D631530002C7098;
+			remoteInfo = medialib;
+		};
 		2D40E52826CA539E00522C79 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2DA84F7624F58894003507A2 /* jansson.xcodeproj */;
@@ -3285,6 +3295,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 2D27AED31D9D86ED00842D76;
 			remoteInfo = rg_scanner;
+		};
+		2D48DB8B2269B731002CACFD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4D1B3E7218379829003E6066 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2D3A4BB31D631530002C7098;
+			remoteInfo = medialib;
 		};
 		2D48DB8D2269B731002CACFD /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -4357,6 +4374,7 @@
 				2DF16CB61DCB62FD007D7F05 /* supereq.dylib in Copy Plugins */,
 				2D1DC09C1DCB3A1500441A08 /* ddb_mono2stereo.dylib in Copy Plugins */,
 				2D27AEF11D9D877D00842D76 /* rg_scanner.dylib in Copy Plugins */,
+				2D3A4BBD1D6315D6002C7098 /* medialib.dylib in Copy Plugins */,
 				2D3138251D08AB3400CBD871 /* artwork.dylib in Copy Plugins */,
 				2D6530E41CE79F4E00163808 /* adplug.dylib in Copy Plugins */,
 				2D8DA07A1C97184B0044CC15 /* psf.dylib in Copy Plugins */,
@@ -4428,6 +4446,7 @@
 				2D48DBFA2269B731002CACFD /* supereq.dylib in Copy Plugins */,
 				2D48DBFB2269B731002CACFD /* ddb_mono2stereo.dylib in Copy Plugins */,
 				2D48DBFC2269B731002CACFD /* rg_scanner.dylib in Copy Plugins */,
+				2D48DBFD2269B731002CACFD /* medialib.dylib in Copy Plugins */,
 				2D48DBFE2269B731002CACFD /* artwork.dylib in Copy Plugins */,
 				2D48DC002269B731002CACFD /* adplug.dylib in Copy Plugins */,
 				2D48DC012269B731002CACFD /* ffmpeg.dylib in Copy Plugins */,
@@ -14674,6 +14693,8 @@
 				2D48DB842269B731002CACFD /* PBXTargetDependency */,
 				2D48DB862269B731002CACFD /* PBXTargetDependency */,
 				2D48DB882269B731002CACFD /* PBXTargetDependency */,
+				2D48DB8A2269B731002CACFD /* PBXTargetDependency */,
+				2D48DB8C2269B731002CACFD /* PBXTargetDependency */,
 				2D48DB8E2269B731002CACFD /* PBXTargetDependency */,
 				2D48DB902269B731002CACFD /* PBXTargetDependency */,
 				2D48DB922269B731002CACFD /* PBXTargetDependency */,
@@ -15340,6 +15361,7 @@
 				2DF16CB51DCB62F4007D7F05 /* PBXTargetDependency */,
 				2D1DC09B1DCB3A1000441A08 /* PBXTargetDependency */,
 				2D27AEF01D9D876E00842D76 /* PBXTargetDependency */,
+				2D3A4BBC1D6315CE002C7098 /* PBXTargetDependency */,
 				2D3138241D08AB2700CBD871 /* PBXTargetDependency */,
 				2D6530E31CE79F2900163808 /* PBXTargetDependency */,
 				2DFD51661C9715FA00961D19 /* PBXTargetDependency */,
@@ -17315,6 +17337,7 @@
 				2DA80C7426C0708200E8EC7F /* CuesheetTests.m in Sources */,
 				2DAA4C141AAF88FF00519559 /* TitleFormattingTests.m in Sources */,
 				2D4A9468223EFC6700199551 /* CoreAudioTests.m in Sources */,
+				2DEAA7CE2789A256005416CA /* MediaLibTests.m in Sources */,
 				4D31BECE1E9FB194001D1B89 /* ResamplerTests.m in Sources */,
 				2DBF3DC5270A101400023138 /* medialibstate.c in Sources */,
 				2D7F38031B2858AC00692A7B /* JunklibTests.m in Sources */,
@@ -18216,6 +18239,11 @@
 			target = 2D621F821CD92C9000EB6D22 /* artwork */;
 			targetProxy = 2D3138231D08AB2700CBD871 /* PBXContainerItemProxy */;
 		};
+		2D3A4BBC1D6315CE002C7098 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2D3A4BB31D631530002C7098 /* medialib */;
+			targetProxy = 2D3A4BBB1D6315CE002C7098 /* PBXContainerItemProxy */;
+		};
 		2D40E52926CA539E00522C79 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = jansson;
@@ -18240,6 +18268,11 @@
 			isa = PBXTargetDependency;
 			target = 2D27AED31D9D86ED00842D76 /* rg_scanner */;
 			targetProxy = 2D48DB892269B731002CACFD /* PBXContainerItemProxy */;
+		};
+		2D48DB8A2269B731002CACFD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2D3A4BB31D631530002C7098 /* medialib */;
+			targetProxy = 2D48DB8B2269B731002CACFD /* PBXContainerItemProxy */;
 		};
 		2D48DB8C2269B731002CACFD /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -22259,6 +22292,7 @@
 					GLIB_DISABLE_DEPRECATION_WARNINGS,
 					GTK_DISABLE_DEPRECATION_WARNINGS,
 					"DDB_WARN_DEPRECATED=1",
+					"ENABLE_MEDIALIB=1",
 				);
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
@@ -22323,6 +22357,7 @@
 					GLIB_DISABLE_DEPRECATION_WARNINGS,
 					GTK_DISABLE_DEPRECATION_WARNINGS,
 					"DDB_WARN_DEPRECATED=1",
+					"ENABLE_MEDIALIB=1",
 				);
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
@@ -22979,6 +23014,7 @@
 					"OSX_APPBUNDLE=1",
 					"DISABLE_MM_KEY_GRABBER=1",
 					"_DEBUG=1",
+					"ENABLE_MEDIALIB=1",
 				);
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_TREAT_INCOMPATIBLE_POINTER_TYPE_WARNINGS_AS_ERRORS = YES;
@@ -23033,6 +23069,7 @@
 					"DOCDIR=\\\"donotuse\\\"",
 					"HAVE_LOG2=1",
 					"OSX_APPBUNDLE=1",
+					"ENABLE_MEDIALIB=1",
 				);
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_TREAT_INCOMPATIBLE_POINTER_TYPE_WARNINGS_AS_ERRORS = YES;
