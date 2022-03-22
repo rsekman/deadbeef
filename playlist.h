@@ -547,4 +547,7 @@ plt_get_head_item(playlist_t *p, int iter);
 playItem_t *
 plt_get_tail_item(playlist_t *p, int iter);
 
+int
+pl_items_from_same_album(playItem_t* a, playItem_t* b);
+
 #endif // __PLAYLIST_H
