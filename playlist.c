@@ -1684,23 +1684,6 @@ plt_insert_item (playlist_t *playlist, playItem_t *after, playItem_t *it) {
 
     // shuffle
     playItem_t *prev = it->prev[PL_MAIN];
-    const char *aa = NULL, *prev_aa = NULL;
-    if (prev) {
-        aa = pl_find_meta_raw (it, "band");
-        if (!aa) {
-            aa = pl_find_meta_raw (it, "album artist");
-        }
-        if (!aa) {
-            aa = pl_find_meta_raw (it, "albumartist");
-        }
-        prev_aa = pl_find_meta_raw (prev, "band");
-        if (!prev_aa) {
-            prev_aa = pl_find_meta_raw (prev, "album artist");
-        }
-        if (!prev_aa) {
-            prev_aa = pl_find_meta_raw (prev, "albumartist");
-        }
-    }
     if (streamer_get_shuffle () == DDB_SHUFFLE_ALBUMS && prev && pl_items_from_same_album(prev, it))  {
         it->shufflerating = prev->shufflerating;
     }
