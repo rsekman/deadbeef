@@ -381,7 +381,6 @@ seekbar_draw (GtkWidget *widget, cairo_t *cr) {
             }
 
             clearlooks_rounded_rectangle (cr, ax + aw/2 - self->textwidth/2, ay+4, self->textwidth, ah-8, 3, 0xff);
-            cairo_fill (cr);
 
             cairo_move_to (cr, self->textpos, ay+ah/2+ex.height/2);
             GdkColor clr;
