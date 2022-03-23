@@ -507,8 +507,8 @@ enum {
     DB_EV_FOCUS_SELECTION = 24, 
 #endif
 
-    DB_EV_NEXT_ALBUM = 25, // switch to next album
-    DB_EV_PREV_ALBUM = 26, // switch to prev album
+    DB_EV_PLAY_NEXT_ALBUM = 25, // switch to next album
+    DB_EV_PLAY_PREV_ALBUM = 26, // switch to prev album
     DB_EV_PLAY_RANDOM_ALBUM = 27, // play random album
     // -----------------
     // structured events

@@ -745,6 +745,25 @@ streamer_move_to_randomsong (int r) {
 }
 
 int
+streamer_move_to_nextalbum (int r) {
+    if (r) {
+        streamer_abort_files ();
+    }
+    handler_push (handler, STR_EV_NEXT_ALBUM, 0, r, 0);
+    return 0;
+}
+
+int
+streamer_move_to_prevalbum (int r) {
+    if (r) {
+        streamer_abort_files ();
+    }
+    handler_push (handler, STR_EV_PREV_ALBUM, 0, r, 0);
+    return 0;
+}
+
+
+int
 streamer_move_to_randomalbum (int r) {
     if (r) {
         streamer_abort_files ();
@@ -1570,6 +1589,12 @@ streamer_thread (void *unused) {
                 play_next (0, shuffle, repeat);
                 break;
             case STR_EV_RAND_ALBUM:
+                play_next_album (0, shuffle, repeat);
+                break;
+            case STR_EV_NEXT_ALBUM:
+                play_next_album (0, shuffle, repeat);
+                break;
+            case STR_EV_PREV_ALBUM:
                 play_next_album (0, shuffle, repeat);
                 break;
             case STR_EV_SEEK:
@@ -2570,18 +2595,19 @@ streamer_get_next_album_with_direction (int dir, ddb_shuffle_t shuffle, ddb_repe
     const char *origin_album = pl_find_meta_raw (origin, "album");
     it = origin;
     const char *it_album = NULL;
-    int done = 0;
-    if (dir < 0) {
-        done = -1;
+    for (int done = 0; done >= (3 - dir) /2; done++ ) {
+        do {
+            if (dir > 0) {
+                it = get_next_track(it, shuffle, repeat);
+            } else if (dir < 0) {
+                it = get_prev_track(it, shuffle, repeat);
+            }
+            it_album = pl_find_meta_raw (it, "album");
+        } while ( strcmp(it_album, origin_album) == 0) ;
     }
-    do {
-        if (dir > 0) {
-            it = get_next_track(it, shuffle, repeat);
-        } else if (dir < 0) {
-            it = get_prev_track(it, shuffle, repeat);
-        }
-        it_album = pl_find_meta_raw (it, "album");
-    } while ( strcmp(it_album, origin_album) == 0) ;
+    if ( dir == -1 ) {
+        it = get_next_track(it, shuffle, repeat);
+    }
     return it;
 }
 

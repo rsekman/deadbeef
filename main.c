@@ -868,6 +868,12 @@ player_mainloop (void) {
                 case DB_EV_PREV:
                     streamer_move_to_prevsong (1);
                     break;
+                case DB_EV_PLAY_NEXT_ALBUM:
+                    streamer_move_to_nextalbum (1);
+                    break;
+                case DB_EV_PLAY_PREV_ALBUM:
+                    streamer_move_to_prevalbum (1);
+                    break;
                 case DB_EV_PAUSE:
                     if (output->state () != DDB_PLAYBACK_STATE_PAUSED) {
                         output->pause ();

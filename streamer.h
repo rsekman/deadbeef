@@ -37,7 +37,9 @@ enum {
     STR_EV_NEXT, // streamer_move_to_nextsong
     STR_EV_PREV, // streamer_move_to_prevsong
     STR_EV_RAND, // streamer_move_to_randomsong
-    STR_EV_RAND_ALBUM, // streamer_move_to_randomsong
+    STR_EV_NEXT_ALBUM, // streamer_move_to_nextalbum
+    STR_EV_PREV_ALBUM, // streamer_move_to_prevalbum
+    STR_EV_RAND_ALBUM, // streamer_move_to_randomalbum
     STR_EV_SEEK, // streamer_set_seek; p1: float pos
     STR_EV_SET_CURR_PLT, // streamer_set_current_playlist
     STR_EV_DSP_RELOAD, // reload dsp settings
@@ -123,6 +125,12 @@ streamer_move_to_prevsong (int r);
 
 int
 streamer_move_to_randomsong (int r);
+
+int
+streamer_move_to_nextalbum (int r);
+
+int
+streamer_move_to_prevalbum (int r);
 
 int
 streamer_move_to_randomalbum (int r);
