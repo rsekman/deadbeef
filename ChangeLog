@@ -1,3 +1,7 @@
+version 1.9.1
+	Fixed: The release tarball was missing some required files
+	Fixed: Restored Belarussian language support - thanks to @gimrock, @kai3341 and others for changing my mind about people of Belarus. Fuck lukashenko.
+
 version 1.9.0
 	Fixed: WMA regression which caused corrupt playback
 	Fixed: Deadlock in ALSA plugin
@@ -9,7 +13,12 @@ version 1.9.0
 	Fixed: Paused state was not persisted correctly after force-quitting
 	Fixed: Regression which broke musepack seeking
 	Fixed: Crash when notification artwork could not be found
+	Fixed: Poor performance when saving playlist and configuration files
+	Fixed: sndfile not opening files because of uninitialized memory access bug
 	Fixed: Crash when removing tracks from playlist while they're playing
+	Fixed: Rendering group titles with blank text
+	Fixed: Delay activation of a playlist tab during drag-drop over the tab bar
+	Fixed: ᵣussian and ᵦelarussian languages are no longer supported
 	Added: Long file seeking support for Opus and FFMPEG
 	Added: HTTPS support for vfs_curl in portable builds, via libmbedtls
 	Added: Design mode for CocoaUI
@@ -23,6 +32,7 @@ version 1.9.0
 	Added: Improved DSP preferences GTK UI (Saivert)
 	Added: Improved handling of invalid MP3 files
 	Added: Last.fm scrobbler will use HTTPS by default
+	Glory to Ukraine! 💛💙
 
 version 1.8.8
 	Fixed: A crash and file path issues in PSF plugin (greedysky)

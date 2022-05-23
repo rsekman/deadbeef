@@ -99,7 +99,7 @@ extern "C" {
 // 0.1 -- deadbeef-0.2.0
 
 #define DB_API_VERSION_MAJOR 1
-#define DB_API_VERSION_MINOR 15
+#define DB_API_VERSION_MINOR 16
 
 #if defined(__clang__)
 
@@ -1433,8 +1433,6 @@ typedef struct {
 
     // sort using title formatting v2
     void (*plt_sort_v2) (ddb_playlist_t *plt, int iter, int id, const char *format, int order);
-    //autosort
-    void (*plt_autosort) (ddb_playlist_t *plt);
 
 
     // playqueue APIs
@@ -1670,6 +1668,10 @@ typedef struct {
         int (*callback)(ddb_insert_file_result_t result, const char *filename, void *user_data),
         void *user_data
     );
+#endif
+#if (DDB_API_LEVEL >= 16)
+    //autosort
+    void (*plt_autosort) (ddb_playlist_t *plt);
 #endif
 } DB_functions_t;
 

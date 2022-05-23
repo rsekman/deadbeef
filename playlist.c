@@ -1413,8 +1413,7 @@ plt_insert_dir_int (
 
     // load the rest of the files
     if (!pabort || !*pabort) {
-        for (int i = 0; i < n; i++)
-        {
+        for (int i = 0; i < n; i++) {
             // no hidden files
             if (!namelist[i]->d_name[0] || namelist[i]->d_name[0] == '.') {
                 continue;
@@ -3341,7 +3340,10 @@ pl_set_selected (playItem_t *it, int sel) {
 
 int
 pl_is_selected (playItem_t *it) {
-    return it->selected;
+    pl_lock();
+    int res = it->selected;
+    pl_unlock();
+    return res;
 }
 
 playItem_t *
@@ -3432,9 +3434,14 @@ pl_set_cursor (int iter, int cursor) {
 // drop_before is insertion point
 void
 plt_move_items (playlist_t *to, int iter, playlist_t *from, playItem_t *drop_before, uint32_t *indexes, int count) {
+    playItem_t *playing = streamer_get_playing_track ();
+
     LOCK;
 
     if (!from || !to) {
+        if (playing) {
+            pl_item_unref (playing);
+        }
         UNLOCK;
         return;
     }
@@ -3455,8 +3462,6 @@ plt_move_items (playlist_t *to, int iter, playlist_t *from, playItem_t *drop_bef
     else {
         drop_after = to->tail[iter];
     }
-
-    playItem_t *playing = streamer_get_playing_track ();
 
     for (playItem_t *it = from->head[iter]; it && processed < count; it = next, idx++) {
         next = it->next[iter];
@@ -3479,7 +3484,6 @@ plt_move_items (playlist_t *to, int iter, playlist_t *from, playItem_t *drop_bef
     if (playing) {
         pl_item_unref (playing);
     }
-
 
     no_remove_notify = 0;
     UNLOCK;
@@ -4123,4 +4127,33 @@ pl_items_from_same_album(playItem_t* a, playItem_t* b){
         }
     }
     return pl_find_meta_raw(a, "album") == pl_find_meta_raw (b, "album") && a_artist == b_artist;
+}
+int
+pl_get_played(playItem_t *it) {
+    pl_lock();
+    int ret = it->played;
+    pl_unlock();
+    return ret;
+}
+
+void
+pl_set_played(playItem_t *it, int played) {
+    pl_lock();
+    it->played = played;
+    pl_unlock();
+}
+
+int
+pl_get_shufflerating (playItem_t *it) {
+    pl_lock();
+    int ret = it->shufflerating;
+    pl_unlock();
+    return ret;
+}
+
+void
+pl_set_shufflerating (playItem_t *it, int rating) {
+    pl_lock();
+    it->shufflerating = rating;
+    pl_unlock();
 }

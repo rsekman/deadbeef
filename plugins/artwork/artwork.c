@@ -662,7 +662,7 @@ web_lookups (const char *cache_path, ddb_cover_info_t *cover) {
     if (!cache_path) {
         return -1;
     }
-#if USE_VFS_CURL
+#ifdef USE_VFS_CURL
     if (artwork_enable_lfm) {
         if (!fetch_from_lastfm (cover->priv->artist, cover->priv->album, cache_path)) {
             cover->image_filename = strdup (cache_path);
@@ -907,7 +907,6 @@ process_query (ddb_cover_info_t *cover) {
     }
 
 #ifdef USE_VFS_CURL
-
     // Don't do anything if all web lookups are off
     if (!artwork_enable_wos
         && !artwork_enable_lfm
@@ -1379,6 +1378,7 @@ _init_cover_metadata(ddb_cover_info_t *cover, ddb_playItem_t *track) {
     ctx._size = sizeof (ddb_tf_context_t);
     ctx.it = track;
 
+#ifdef USE_VFS_CURL
     if (artwork_enable_wos && strlen (cover->priv->filepath) > 3 && !strcasecmp (cover->priv->filepath + strlen (cover->priv->filepath) - 3, ".ay")) {
         strcpy (cover->priv->artist, "AY Music");
         deadbeef->tf_eval (&ctx, title_tf, cover->priv->album, sizeof (cover->priv->album));
@@ -1390,7 +1390,9 @@ _init_cover_metadata(ddb_cover_info_t *cover, ddb_playItem_t *track) {
         }
         strcpy (cover->priv->title, cover->priv->album);
     }
-    else {
+    else
+#endif
+    {
         deadbeef->tf_eval (&ctx, album_tf, cover->priv->album, sizeof (cover->priv->album));
         deadbeef->tf_eval (&ctx, artist_tf, cover->priv->artist, sizeof (cover->priv->artist));
         deadbeef->tf_eval (&ctx, title_tf, cover->priv->title, sizeof (cover->priv->title));
@@ -1437,7 +1439,7 @@ cover_get (ddb_cover_query_t *query, ddb_cover_callback_t callback) {
         }
 
         /* Process this query, hopefully writing a file into cache */
-        ddb_cover_info_t *cover = sync_cover_info_alloc();
+        __block ddb_cover_info_t *cover = sync_cover_info_alloc();
 
         _init_cover_metadata(cover, query->track);
 
@@ -1454,10 +1456,19 @@ cover_get (ddb_cover_query_t *query, ddb_cover_callback_t callback) {
         }
 
         // check the cache
-        ddb_cover_info_t *cached_cover = cover_cache_find (cover);
-        if (cached_cover) {
-            cached_cover->priv->timestamp = time(NULL);
-            cover = cached_cover;
+        __block int found_in_cache = 0;
+        dispatch_sync(sync_queue, ^{
+            ddb_cover_info_t *cached_cover = cover_cache_find (cover);
+            if (cached_cover) {
+                found_in_cache = 1;
+                cached_cover->priv->timestamp = time(NULL);
+                cover_info_release(cover);
+                cover = cached_cover;
+            }
+        });
+
+
+        if (found_in_cache) {
             _execute_callback (callback, cover, query);
         }
         else {

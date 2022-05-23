@@ -103,11 +103,6 @@ Portuguese (Brazil)
 Romanian
  Mișu Moldovan <dumol@xfce.org>
 
-Russian
- Alexey Yakovenko <wakeroid@gmail.com>
- Andrei Stepanov
- Dmitriy Simbiriatin <slpiv@mail.ru>
-
 Sinhala
  amscata <amith@compsoc.lk>
 
@@ -138,6 +133,7 @@ Uighur
 
 Ukrainian
  Yarema aka Knedlyk <yupadmin@gmail.com>
+ Oleksiy Yakovenko <waker@users.sf.net>
 
 Vietnamese
  Tran Duy Hung <nguyentieuhau@gmail.com>
