@@ -2735,6 +2735,7 @@ play_next_album(int dir, ddb_shuffle_t shuffle, ddb_repeat_t repeat) {
 
     pl_lock();
     playItem_t *next = streamer_get_next_album_with_direction (dir, shuffle, repeat);
+    pl_unlock();
 
     if (!next) {
         streamer_set_last_played (NULL);
@@ -2749,7 +2750,6 @@ play_next_album(int dir, ddb_shuffle_t shuffle, ddb_repeat_t repeat) {
         _rebuild_shuffle_albums_after_manual_trigger (streamer_playlist, next);
     }
     _play_track(next, 0);
-    pl_unlock();
     pl_item_unref(next);
 }
 
