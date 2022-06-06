@@ -2652,8 +2652,10 @@ play_next_album(int dir, ddb_shuffle_t shuffle, ddb_repeat_t repeat) {
         // rebuild shuffle order
         _rebuild_shuffle_albums_after_manual_trigger (streamer_playlist, next);
     }
+    streamer_lock();
     _play_track(next, 0);
     pl_unlock();
+    streamer_unlock();
     pl_item_unref(next);
 }
 
