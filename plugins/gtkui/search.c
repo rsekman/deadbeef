@@ -89,10 +89,11 @@ search_process (DdbListview *listview, ddb_playlist_t *plt) {
     char title[1024] = "";
     ddb_tf_context_t ctx = {
         ._size = sizeof (ddb_tf_context_t),
-        .plt = deadbeef->plt_get_curr (),
+        .plt = plt,
         .iter = PL_SEARCH
     };
     deadbeef->tf_eval (&ctx, window_title_bytecode, title, sizeof (title));
+
     gtk_window_set_title (GTK_WINDOW (searchwin), title);
 
 }
@@ -261,18 +262,18 @@ static gboolean
 trackfocus_cb (gpointer p) {
     DdbListview *listview = playlist_visible();
     if (listview) {
-        deadbeef->pl_lock ();
         DB_playItem_t *it = deadbeef->streamer_get_playing_track ();
         if (it) {
+            deadbeef->pl_lock ();
             int idx = deadbeef->pl_get_idx_of_iter (it, PL_SEARCH);
             if (idx != -1) {
                 ddb_listview_select_single (listview, idx);
                 deadbeef->pl_set_cursor (PL_SEARCH, idx);
                 ddb_listview_scroll_to (listview, idx);
             }
+            deadbeef->pl_unlock ();
             deadbeef->pl_item_unref (it);
         }
-        deadbeef->pl_unlock ();
     }
     return FALSE;
 }

@@ -72,7 +72,7 @@ typedef struct {
 static DB_decoder_t plugin;
 DB_functions_t *deadbeef;
 
-#define BUFFER_SIZE 24576
+#define BUFFER_SIZE 65536
 #define OUT_BUFFER_SIZE 25000 // one block may be up to 22K samples, which is 88Kb for stereo
 #define HEADER_SIZE 14
 typedef struct {
@@ -444,6 +444,10 @@ dts_init (DB_fileinfo_t *_info, DB_playItem_t *it) {
         trace ("dca: probe failed\n");
         return -1;
     }
+
+    info->bufptr = info->buf;
+    info->bufpos = info->buf + HEADER_SIZE;
+
     info->frame_byte_size = len;
 
     int flags = info->flags &~ (DCA_LFE | DCA_ADJUST_LEVEL);

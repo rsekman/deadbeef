@@ -692,9 +692,9 @@ action_play_prev_album_cb (struct DB_plugin_action_s *action, ddb_action_context
 
 int
 action_seek_5p_forward_cb (struct DB_plugin_action_s *action, ddb_action_context_t ctx) {
-    deadbeef->pl_lock ();
     DB_playItem_t *it = deadbeef->streamer_get_playing_track ();
     if (it) {
+        deadbeef->pl_lock ();
         float dur = deadbeef->pl_get_item_duration (it);
         if (dur > 0) {
             float pos = deadbeef->streamer_get_playpos ();
@@ -704,17 +704,17 @@ action_seek_5p_forward_cb (struct DB_plugin_action_s *action, ddb_action_context
             }
             deadbeef->sendmessage (DB_EV_SEEK, 0, (uint32_t)(pos * 1000), 0);
         }
+        deadbeef->pl_unlock ();
         deadbeef->pl_item_unref (it);
     }
-    deadbeef->pl_unlock ();
     return 0;
 }
 
 int
 action_seek_5p_backward_cb (struct DB_plugin_action_s *action, ddb_action_context_t ctx) {
-    deadbeef->pl_lock ();
     DB_playItem_t *it = deadbeef->streamer_get_playing_track ();
     if (it) {
+        deadbeef->pl_lock ();
         float dur = deadbeef->pl_get_item_duration (it);
         if (dur > 0) {
             float pos = deadbeef->streamer_get_playpos ();
@@ -724,17 +724,17 @@ action_seek_5p_backward_cb (struct DB_plugin_action_s *action, ddb_action_contex
             }
             deadbeef->sendmessage (DB_EV_SEEK, 0, (uint32_t)(pos * 1000), 0);
         }
+        deadbeef->pl_unlock ();
         deadbeef->pl_item_unref (it);
     }
-    deadbeef->pl_unlock ();
     return 0;
 }
 
 int
 action_seek_1p_forward_cb (struct DB_plugin_action_s *action, ddb_action_context_t ctx) {
-    deadbeef->pl_lock ();
     DB_playItem_t *it = deadbeef->streamer_get_playing_track ();
     if (it) {
+        deadbeef->pl_lock ();
         float dur = deadbeef->pl_get_item_duration (it);
         if (dur > 0) {
             float pos = deadbeef->streamer_get_playpos ();
@@ -744,17 +744,17 @@ action_seek_1p_forward_cb (struct DB_plugin_action_s *action, ddb_action_context
             }
             deadbeef->sendmessage (DB_EV_SEEK, 0, (uint32_t)(pos * 1000), 0);
         }
+        deadbeef->pl_unlock ();
         deadbeef->pl_item_unref (it);
     }
-    deadbeef->pl_unlock ();
     return 0;
 }
 
 int
 action_seek_1p_backward_cb (struct DB_plugin_action_s *action, ddb_action_context_t ctx) {
-    deadbeef->pl_lock ();
     DB_playItem_t *it = deadbeef->streamer_get_playing_track ();
     if (it) {
+        deadbeef->pl_lock ();
         float dur = deadbeef->pl_get_item_duration (it);
         if (dur > 0) {
             float pos = deadbeef->streamer_get_playpos ();
@@ -764,17 +764,17 @@ action_seek_1p_backward_cb (struct DB_plugin_action_s *action, ddb_action_contex
             }
             deadbeef->sendmessage (DB_EV_SEEK, 0, (uint32_t)(pos * 1000), 0);
         }
+        deadbeef->pl_unlock ();
         deadbeef->pl_item_unref (it);
     }
-    deadbeef->pl_unlock ();
     return 0;
 }
 
 static int
 seek_sec (float sec) {
-    deadbeef->pl_lock ();
     DB_playItem_t *it = deadbeef->streamer_get_playing_track ();
     if (it) {
+        deadbeef->pl_lock ();
         float dur = deadbeef->pl_get_item_duration (it);
         if (dur > 0) {
             float pos = deadbeef->streamer_get_playpos ();
@@ -787,9 +787,9 @@ seek_sec (float sec) {
             }
             deadbeef->sendmessage (DB_EV_SEEK, 0, (uint32_t)(pos * 1000), 0);
         }
+        deadbeef->pl_unlock ();
         deadbeef->pl_item_unref (it);
     }
-    deadbeef->pl_unlock ();
     return 0;
 }
 

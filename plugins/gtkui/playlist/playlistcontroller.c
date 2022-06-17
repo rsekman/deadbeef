@@ -207,6 +207,7 @@ static gboolean
 cursor_moved_cb (gpointer data) {
     w_trackdata_t *d = data;
     playlist_set_cursor (d->listview, d->trk);
+    g_object_unref(d->listview);
     deadbeef->pl_item_unref (d->trk);
     free (data);
     return FALSE;
@@ -234,18 +235,18 @@ focus_selection_cb (gpointer data) {
 // Otherwise gtkui.c will handle it and send a PLAYLISTSWITCHED message
 static gboolean
 trackfocus_cb (gpointer data) {
-    deadbeef->pl_lock ();
     DB_playItem_t *it = deadbeef->streamer_get_playing_track ();
     if (it) {
+        deadbeef->pl_lock ();
         int cursor = deadbeef->pl_get_idx_of (it);
         if (cursor != -1) {
             ddb_listview_select_single (data, cursor);
             deadbeef->pl_set_cursor (PL_MAIN, cursor);
             ddb_listview_scroll_to (data, cursor);
         }
+        deadbeef->pl_unlock ();
         deadbeef->pl_item_unref (it);
     }
-    deadbeef->pl_unlock ();
     return FALSE;
 }
 
