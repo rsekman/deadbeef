@@ -2,8 +2,8 @@
 //  SoundPreferencesViewController.m
 //  DeaDBeeF
 //
-//  Created by Alexey Yakovenko on 2/25/20.
-//  Copyright © 2020 Alexey Yakovenko. All rights reserved.
+//  Created by Oleksiy Yakovenko on 2/25/20.
+//  Copyright © 2020 Oleksiy Yakovenko. All rights reserved.
 //
 
 #import "DdbShared.h"
@@ -42,7 +42,7 @@ extern DB_functions_t *deadbeef;
     DB_output_t **o = deadbeef->plug_get_output_list ();
     for (index = 0; o[index]; index++) {
         if (!strcmp (o[index]->plugin.id, curplug)) {
-            self.outputPluginsIndex = index;
+            _outputPluginsIndex = index;
             break;
         }
     }

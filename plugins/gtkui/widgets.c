@@ -1,6 +1,6 @@
 /*
     DeaDBeeF -- the music player
-    Copyright (C) 2009-2015 Alexey Yakovenko and other contributors
+    Copyright (C) 2009-2015 Oleksiy Yakovenko and other contributors
 
     This software is provided 'as-is', without any express or implied
     warranty.  In no event will the authors be held liable for any damages
@@ -146,12 +146,6 @@ typedef struct {
     char **titles;
 } w_tabs_t;
 
-typedef struct {
-    ddb_gtkui_widget_t base;
-    GtkWidget *tree;
-    guint refresh_timeout;
-} w_selproperties_t;
-
 typedef enum {
     SCOPE_SCALE_AUTO,
     SCOPE_SCALE_1X,
@@ -220,7 +214,7 @@ typedef struct {
 
     gboolean updating_menu; // suppress menu event handlers
     GtkWidget *menu;
-    GtkWidget *mode_descrete_item;
+    GtkWidget *mode_discrete_item;
     GtkWidget *mode_12_item;
     GtkWidget *mode_24_item;
 
@@ -2310,157 +2304,6 @@ w_playlist_create (void) {
     return (ddb_gtkui_widget_t*)w;
 }
 
-////// selection properties widget
-
-gboolean
-fill_selproperties_cb (gpointer data) {
-    w_selproperties_t *w = data;
-    DB_playItem_t **tracks = NULL;
-    if (w->refresh_timeout) {
-        g_source_remove (w->refresh_timeout);
-        w->refresh_timeout = 0;
-    }
-    int numtracks = 0;
-    deadbeef->pl_lock ();
-    int nsel = deadbeef->pl_getselcount ();
-    if (0 < nsel) {
-        tracks = malloc (sizeof (DB_playItem_t *) * nsel);
-        if (tracks) {
-            int n = 0;
-            DB_playItem_t *it = deadbeef->pl_get_first (PL_MAIN);
-            while (it) {
-                if (deadbeef->pl_is_selected (it)) {
-                    assert (n < nsel);
-                    deadbeef->pl_item_ref (it);
-                    tracks[n++] = it;
-                }
-                DB_playItem_t *next = deadbeef->pl_get_next (it, PL_MAIN);
-                deadbeef->pl_item_unref (it);
-                it = next;
-            }
-            numtracks = nsel;
-        }
-        else {
-            deadbeef->pl_unlock ();
-            return FALSE;
-        }
-    }
-    GtkListStore *store = GTK_LIST_STORE (gtk_tree_view_get_model (GTK_TREE_VIEW (w->tree)));
-    trkproperties_fill_meta (store, tracks, numtracks);
-    if (tracks) {
-        for (int i = 0; i < numtracks; i++) {
-            deadbeef->pl_item_unref (tracks[i]);
-        }
-        free (tracks);
-        tracks = NULL;
-        numtracks = 0;
-    }
-    deadbeef->pl_unlock ();
-    return FALSE;
-}
-
-static void
-selproperties_selection_changed (gpointer user_data)
-{
-    w_selproperties_t *selprop_w = user_data;
-    if (selprop_w->refresh_timeout) {
-        g_source_remove (selprop_w->refresh_timeout);
-        selprop_w->refresh_timeout = 0;
-    }
-    selprop_w->refresh_timeout = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 10, fill_selproperties_cb, user_data, NULL);
-}
-
-static int
-selproperties_message (ddb_gtkui_widget_t *w, uint32_t id, uintptr_t ctx, uint32_t p1, uint32_t p2) {
-    switch (id) {
-    case DB_EV_TRACKINFOCHANGED:
-    case DB_EV_PLAYLISTCHANGED:
-        if (p1 == DDB_PLAYLIST_CHANGE_CONTENT || p1 == DDB_PLAYLIST_CHANGE_SELECTION) {
-            selproperties_selection_changed (w);
-        }
-        break;
-    case DB_EV_PLAYLISTSWITCHED:
-        selproperties_selection_changed (w);
-        break;
-    }
-    return 0;
-}
-
-static void
-w_selproperties_init (struct ddb_gtkui_widget_s *widget) {
-    w_selproperties_t *w = (w_selproperties_t *)widget;
-    w->refresh_timeout = 0;
-    fill_selproperties_cb (widget);
-}
-
-static void
-on_selproperties_showheaders_toggled (GtkCheckMenuItem *checkmenuitem, gpointer          user_data) {
-    w_selproperties_t *w = user_data;
-    int showheaders = gtk_check_menu_item_get_active (GTK_CHECK_MENU_ITEM (checkmenuitem));
-    deadbeef->conf_set_int ("gtkui.selection_properties.show_headers", showheaders);
-    gtk_tree_view_set_headers_visible (GTK_TREE_VIEW (w->tree), showheaders);
-}
-
-static void
-w_selproperties_initmenu (struct ddb_gtkui_widget_s *w, GtkWidget *menu) {
-    GtkWidget *item;
-    item = gtk_check_menu_item_new_with_mnemonic (_("Show Column Headers"));
-    gtk_widget_show (item);
-    int showheaders = deadbeef->conf_get_int ("gtkui.selection_properties.show_headers", 1);
-    gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), showheaders);
-    gtk_container_add (GTK_CONTAINER (menu), item);
-    g_signal_connect ((gpointer) item, "toggled",
-            G_CALLBACK (on_selproperties_showheaders_toggled),
-            w);
-}
-
-ddb_gtkui_widget_t *
-w_selproperties_create (void) {
-    w_selproperties_t *w = malloc (sizeof (w_selproperties_t));
-    memset (w, 0, sizeof (w_selproperties_t));
-
-    w->base.widget = gtk_event_box_new ();
-    w->base.init = w_selproperties_init;
-    w->base.message = selproperties_message;
-    w->base.initmenu = w_selproperties_initmenu;
-
-    gtk_widget_set_can_focus (w->base.widget, FALSE);
-
-    GtkWidget *scroll = gtk_scrolled_window_new (NULL, NULL);
-    gtk_widget_set_can_focus (scroll, FALSE);
-    gtk_widget_show (scroll);
-    gtk_container_add (GTK_CONTAINER (w->base.widget), scroll);
-
-    gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scroll), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-    gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (scroll), GTK_SHADOW_ETCHED_IN);
-    w->tree = gtk_tree_view_new ();
-    gtk_widget_show (w->tree);
-    gtk_tree_view_set_enable_search (GTK_TREE_VIEW (w->tree), FALSE);
-    gtk_container_add (GTK_CONTAINER (scroll), w->tree);
-
-    // NOTE: this list store must be compatible with trkproperties_fill_meta
-    GtkListStore *store = gtk_list_store_new (5, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT, G_TYPE_STRING);
-    gtk_tree_view_set_model (GTK_TREE_VIEW (w->tree), GTK_TREE_MODEL (store));
-    gtk_tree_view_set_rules_hint (GTK_TREE_VIEW (w->tree), TRUE);
-
-    GtkCellRenderer *rend1 = gtk_cell_renderer_text_new ();
-    GtkCellRenderer *rend2 = gtk_cell_renderer_text_new ();
-    GtkTreeViewColumn *col1 = gtk_tree_view_column_new_with_attributes (_("Key"), rend1, "text", 0, NULL);
-    gtk_tree_view_column_set_sizing (col1, GTK_TREE_VIEW_COLUMN_AUTOSIZE);
-    GtkTreeViewColumn *col2 = gtk_tree_view_column_new_with_attributes (_("Value"), rend2, "text", 1, NULL);
-    gtk_tree_view_column_set_sizing (col2, GTK_TREE_VIEW_COLUMN_AUTOSIZE);
-    gtk_tree_view_append_column (GTK_TREE_VIEW (w->tree), col1);
-    gtk_tree_view_append_column (GTK_TREE_VIEW (w->tree), col2);
-    gtk_tree_view_set_headers_clickable (GTK_TREE_VIEW (w->tree), TRUE);
-
-    int showheaders = deadbeef->conf_get_int ("gtkui.selection_properties.show_headers", 1);
-    gtk_tree_view_set_headers_visible (GTK_TREE_VIEW (w->tree), showheaders);
-
-    w_override_signals (w->base.widget, w);
-
-    return (ddb_gtkui_widget_t *)w;
-}
-
 ///// scope vis
 void
 w_scope_destroy (ddb_gtkui_widget_t *w) {
@@ -3228,7 +3071,7 @@ w_spectrum_init (ddb_gtkui_widget_t *w) {
 static void
 _spectrum_menu_update (w_spectrum_t *s) {
     s->updating_menu = TRUE;
-    gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(s->mode_descrete_item), s->analyzer.mode == DDB_ANALYZER_MODE_FREQUENCIES);
+    gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(s->mode_discrete_item), s->analyzer.mode == DDB_ANALYZER_MODE_FREQUENCIES);
     gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(s->mode_12_item), s->analyzer.mode == DDB_ANALYZER_MODE_OCTAVE_NOTE_BANDS && s->analyzer.octave_bars_step == 2);
     gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(s->mode_24_item), s->analyzer.mode == DDB_ANALYZER_MODE_OCTAVE_NOTE_BANDS && s->analyzer.octave_bars_step == 1);
 
@@ -3267,7 +3110,7 @@ _spectrum_menu_activate (GtkWidget* self, gpointer user_data) {
         return;
     }
 
-    if (self == s->mode_descrete_item) {
+    if (self == s->mode_discrete_item) {
         s->analyzer.mode = DDB_ANALYZER_MODE_FREQUENCIES;
         s->analyzer.mode_did_change = 1;
     }
@@ -3403,8 +3246,8 @@ w_spectrum_create (void) {
     GtkWidget *rendering_mode_menu = gtk_menu_new();
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(rendering_mode_item), rendering_mode_menu);
 
-    w->mode_descrete_item = gtk_check_menu_item_new_with_mnemonic( _("Descrete Frequencies"));
-    gtk_widget_show(w->mode_descrete_item);
+    w->mode_discrete_item = gtk_check_menu_item_new_with_mnemonic( _("Discrete Frequencies"));
+    gtk_widget_show(w->mode_discrete_item);
 
     w->mode_12_item = gtk_check_menu_item_new_with_mnemonic( _("1/12 Octave Bands"));
     gtk_widget_show(w->mode_12_item);
@@ -3412,7 +3255,7 @@ w_spectrum_create (void) {
     w->mode_24_item = gtk_check_menu_item_new_with_mnemonic( _("1/24 Octave Bands"));
     gtk_widget_show(w->mode_24_item);
 
-    gtk_menu_shell_insert (GTK_MENU_SHELL(rendering_mode_menu), w->mode_descrete_item, 0);
+    gtk_menu_shell_insert (GTK_MENU_SHELL(rendering_mode_menu), w->mode_discrete_item, 0);
     gtk_menu_shell_insert (GTK_MENU_SHELL(rendering_mode_menu), w->mode_12_item, 1);
     gtk_menu_shell_insert (GTK_MENU_SHELL(rendering_mode_menu), w->mode_24_item, 1);
 
@@ -3473,7 +3316,7 @@ w_spectrum_create (void) {
     //    gtk_menu_shell_insert (GTK_MENU_SHELL(w->menu), separator_item, 2);
     //    gtk_menu_shell_insert (GTK_MENU_SHELL(w->menu), preferences_item, 3);
 
-    gtk_check_menu_item_set_draw_as_radio(GTK_CHECK_MENU_ITEM(w->mode_descrete_item), TRUE);
+    gtk_check_menu_item_set_draw_as_radio(GTK_CHECK_MENU_ITEM(w->mode_discrete_item), TRUE);
     gtk_check_menu_item_set_draw_as_radio(GTK_CHECK_MENU_ITEM(w->mode_12_item), TRUE);
     gtk_check_menu_item_set_draw_as_radio(GTK_CHECK_MENU_ITEM(w->mode_24_item), TRUE);
     gtk_check_menu_item_set_draw_as_radio(GTK_CHECK_MENU_ITEM(w->gap_none_item), TRUE);
@@ -3487,7 +3330,7 @@ w_spectrum_create (void) {
     gtk_check_menu_item_set_draw_as_radio(GTK_CHECK_MENU_ITEM(w->gap_9_item), TRUE);
     gtk_check_menu_item_set_draw_as_radio(GTK_CHECK_MENU_ITEM(w->gap_10_item), TRUE);
 
-    g_signal_connect((gpointer)w->mode_descrete_item, "activate", G_CALLBACK(_spectrum_menu_activate), w);
+    g_signal_connect((gpointer)w->mode_discrete_item, "activate", G_CALLBACK(_spectrum_menu_activate), w);
     g_signal_connect((gpointer)w->mode_12_item, "activate", G_CALLBACK(_spectrum_menu_activate), w);
     g_signal_connect((gpointer)w->mode_24_item, "activate", G_CALLBACK(_spectrum_menu_activate), w);
     g_signal_connect((gpointer)w->gap_none_item, "activate", G_CALLBACK(_spectrum_menu_activate), w);

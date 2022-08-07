@@ -1,6 +1,6 @@
 /*
     DeaDBeeF -- the music player
-    Copyright (C) 2009-2015 Alexey Yakovenko and other contributors
+    Copyright (C) 2009-2015 Oleksiy Yakovenko and other contributors
 
     This software is provided 'as-is', without any express or implied
     warranty.  In no event will the authors be held liable for any damages
@@ -112,9 +112,6 @@ w_placeholder_create (void);
 
 ddb_gtkui_widget_t *
 w_tabs_create (void);
-
-ddb_gtkui_widget_t *
-w_selproperties_create (void);
 
 ddb_gtkui_widget_t *
 w_scope_create (void);

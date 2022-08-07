@@ -4,7 +4,7 @@
 
   streamer implementation
 
-  Copyright (C) 2009-2017 Alexey Yakovenko
+  Copyright (C) 2009-2017 Oleksiy Yakovenko
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -22,7 +22,7 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 
-  Alexey Yakovenko waker@users.sourceforge.net
+  Oleksiy Yakovenko waker@users.sourceforge.net
 */
 #include <stdlib.h>
 #include <string.h>
@@ -2070,6 +2070,7 @@ process_output_block (streamblock_t *block, char *bytes, int bytes_available_siz
 
 static float (*streamer_volume_modifier) (float delta_time);
 
+// used in android branch, do not delete
 void
 streamer_set_volume_modifier (float (*modifier) (float delta_time)) {
     streamer_volume_modifier = modifier;
@@ -2180,6 +2181,9 @@ _streamer_get_bytes (char *bytes, int size) {
     int rb = sz;
     char *readptr = outbuffer;
     char *writeptr = bytes;
+
+    // streamer_reset may clear all blocks, therefore need a lock
+    streamer_lock();
     while (rb > 0) {
         decoded_block_t *decoded_block = decoded_blocks_current();
         if (decoded_block == NULL) {
@@ -2207,9 +2211,7 @@ _streamer_get_bytes (char *bytes, int size) {
             }
 
             if (!decoded_block->is_silent_header) {
-                streamer_lock();
                 playpos += decoded_block->playback_time;
-                streamer_unlock();
                 playtime += decoded_block->playback_time;
             }
 
@@ -2219,11 +2221,13 @@ _streamer_get_bytes (char *bytes, int size) {
 
     sz -= rb; // how many bytes we actually got
 
-    streamer_lock();
     if (sz < _outbuffer_remaining) {
         // FIXME: This is the slowest operation on audio thread, can be optimized with a ring buffer
         memmove (outbuffer, outbuffer + sz, _outbuffer_remaining - sz);
         _outbuffer_remaining -= sz;
+    }
+    else {
+        _outbuffer_remaining = 0;
     }
     streamer_unlock();
 
@@ -2869,17 +2873,17 @@ streamer_yield (void) {
 
 void
 streamer_set_output (DB_output_t *output) {
-    if (mutex) {
-        streamer_lock ();
-    }
     DB_output_t *prev = plug_get_output ();
     ddb_playback_state_t state = DDB_PLAYBACK_STATE_STOPPED;
-
     ddb_waveformat_t fmt = {0};
     if (prev) {
         state = prev->state ();
         memcpy (&fmt, &prev->fmt, sizeof (ddb_waveformat_t));
         prev->free ();
+    }
+
+    if (mutex) {
+        streamer_lock ();
     }
     plug_set_output (output);
 

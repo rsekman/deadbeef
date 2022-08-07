@@ -1,6 +1,6 @@
 /*
     gtkui hotkey handlers
-    Copyright (C) 2009-2013 Alexey Yakovenko and other contributors
+    Copyright (C) 2009-2013 Oleksiy Yakovenko and other contributors
 
     This software is provided 'as-is', without any express or implied
     warranty.  In no event will the authors be held liable for any damages
@@ -166,7 +166,7 @@ int
 action_remove_current_playlist_handler (struct DB_plugin_action_s *action, ddb_action_context_t ctx) {
     int idx = deadbeef->plt_get_curr_idx ();
     if (idx != -1) {
-        deadbeef->plt_remove (idx);
+        gtkui_remove_playlist_at_index (idx);
     }
     return 0;
 }

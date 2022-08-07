@@ -1,6 +1,6 @@
 /*
     DeaDBeeF -- the music player
-    Copyright (C) 2009-2015 Alexey Yakovenko and other contributors
+    Copyright (C) 2009-2015 Oleksiy Yakovenko and other contributors
 
     This software is provided 'as-is', without any express or implied
     warranty.  In no event will the authors be held liable for any damages
@@ -172,9 +172,7 @@ plt_sort_random (playlist_t *playlist, int iter) {
     playlist->head[iter] = 0;
     for (idx = 0; idx < count; idx++) {
         playItem_t *it = array[idx];
-        if (it->prev[iter]) {
-            it->prev[iter] = prev;
-        }
+        it->prev[iter] = prev;
         it->next[iter] = NULL;
         if (!prev) {
             playlist->head[iter] = it;
