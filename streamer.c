@@ -43,7 +43,6 @@
 #include "messagepump.h"
 #include "conf.h"
 #include "plugins.h"
-#include "fastftoi.h"
 #include "volume.h"
 #include "vfs.h"
 #include "premix.h"
@@ -342,19 +341,26 @@ streamer_get_streaming_track (void) {
 }
 
 playItem_t *
+streamer_get_playing_track_unsafe (void) {
+    playItem_t *it = (buffering_track && !playing_track) ? buffering_track : playing_track;
+    if (it) {
+        pl_item_ref (it);
+    }
+    return it;
+}
+
+playItem_t *
 streamer_get_playing_track (void) {
     // some plugins may call this from plugin.start, before streamer is initialized
     if (mutex == 0) {
         return NULL;
     }
     streamer_lock();
-    playItem_t *it = (buffering_track && !playing_track) ? buffering_track : playing_track;
-    if (it) {
-        pl_item_ref (it);
-    }
+    playItem_t *it = streamer_get_playing_track_unsafe();
     streamer_unlock();
     return it;
 }
+
 
 void
 streamer_set_playing_track (playItem_t *it) {
@@ -2461,6 +2467,7 @@ _play_track (playItem_t *it, int startpaused) {
     streamer_lock();
     streamer_reset(1);
     streamer_is_buffering = 1;
+    streamer_unlock();
 
     playItem_t *prev = playing_track;
     if (prev) {
@@ -2496,7 +2503,6 @@ _play_track (playItem_t *it, int startpaused) {
     else {
         streamer_set_buffering_track (NULL);
     }
-    streamer_unlock();
 }
 
 static void

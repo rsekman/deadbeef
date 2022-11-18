@@ -55,7 +55,6 @@ get_albums_for_collection_group_by_field (medialib_source_t *source, ml_tree_ite
 
     default_field_value = deadbeef->metacache_add_string (default_field_value);
 
-    ml_string_t *album = source->db.albums.head;
     char text[1024];
 
     char *tf = NULL;
@@ -65,7 +64,7 @@ get_albums_for_collection_group_by_field (medialib_source_t *source, ml_tree_ite
 
     ml_tree_item_t *root_tail = NULL;
 
-    for (int i = 0; i < source->db.albums.count; i++, album = album->next) {
+    for (ml_collection_tree_node_t *album = source->db.albums.root.children; album != NULL; album = album->next) {
         if (!album->items_count) {
             continue;
         }
@@ -79,6 +78,9 @@ get_albums_for_collection_group_by_field (medialib_source_t *source, ml_tree_ite
         const char *track_field = NULL;
         if (!tf) {
             track_field = deadbeef->pl_find_meta (album->items->it, field);
+
+            // This is necessary to reference a single value from multivalue fields
+            track_field = mc_str_for_track_field = deadbeef->metacache_add_string (track_field);
         }
         else {
             ddb_tf_context_t ctx = {
@@ -97,8 +99,8 @@ get_albums_for_collection_group_by_field (medialib_source_t *source, ml_tree_ite
 
         // Find the bucket of this album - e.g. a genre or an artist
         // NOTE: multiple albums may belong to the same bucket
-        ml_string_t *s = NULL;
-        for (s = coll->head; s; s = s->next) {
+        ml_collection_tree_node_t *s = NULL;
+        for (s = coll->root.children; s; s = s->next) {
             if (track_field == s->text) {
                 break;
             }
@@ -112,7 +114,7 @@ get_albums_for_collection_group_by_field (medialib_source_t *source, ml_tree_ite
         }
 
         // Add all of the album's tracks into that bucket
-        ml_collection_item_t *album_coll_item = album->items;
+        ml_collection_track_ref_t *album_coll_item = album->items;
         for (int j = 0; j < album->items_count; j++, album_coll_item = album_coll_item->next) {
             if (selected && !deadbeef->pl_is_selected (album_coll_item->it)) {
                 continue;
@@ -209,13 +211,13 @@ get_albums_for_collection_group_by_field (medialib_source_t *source, ml_tree_ite
 }
 
 static void
-get_list_of_tracks_for_album (ml_tree_item_t *libitem, ml_string_t *album, int selected) {
+get_list_of_tracks_for_album (ml_tree_item_t *libitem, ml_collection_tree_node_t *album, int selected) {
     char text[1024];
 
     ml_tree_item_t *album_item = NULL;
     ml_tree_item_t *album_tail = NULL;
 
-    ml_collection_item_t *album_coll_item = album->items;
+    ml_collection_track_ref_t *album_coll_item = album->items;
     for (int j = 0; j < album->items_count; j++, album_coll_item = album_coll_item->next) {
         ddb_playItem_t *it = album_coll_item->it;
         if (selected && !deadbeef->pl_is_selected(it)) {
@@ -260,15 +262,15 @@ get_list_of_tracks_for_album (ml_tree_item_t *libitem, ml_string_t *album, int s
 }
 
 static void
-get_subfolders_for_folder (ml_tree_item_t *folderitem, ml_tree_node_t *folder, int selected) {
+get_subfolders_for_folder (ml_tree_item_t *folderitem, ml_collection_tree_node_t *folder, int selected) {
     if (!folderitem->text) {
         folderitem->text = deadbeef->metacache_add_string (folder->text);
     }
 
     ml_tree_item_t *tail = NULL;
     if (folder->children) {
-        for (ml_tree_node_t *c = folder->children; c; c = c->next) {
-            ml_tree_item_t *subfolder = _tree_item_alloc(folder->row_id);
+        for (ml_collection_tree_node_t *c = folder->children; c; c = c->next) {
+            ml_tree_item_t *subfolder = _tree_item_alloc(c->row_id);
             get_subfolders_for_folder (subfolder, c, selected);
             if (subfolder->num_children > 0) {
                 if (tail) {
@@ -287,7 +289,7 @@ get_subfolders_for_folder (ml_tree_item_t *folderitem, ml_tree_node_t *folder, i
         }
     }
     if (folder->items) {
-        for (ml_collection_item_t *i = folder->items; i; i = i->next) {
+        for (ml_collection_track_ref_t *i = folder->items; i; i = i->next) {
             if (selected && !deadbeef->pl_is_selected(i->it)) {
                 continue;
             }
@@ -334,14 +336,14 @@ _create_item_tree_from_collection(ml_collection_t *coll, const char *filter, med
 
     // make sure no dangling pointers from the previous run
     if (coll) {
-        for (ml_string_t *s = coll->head; s; s = s->next) {
+        for (ml_collection_tree_node_t *s = coll->root.children; s; s = s->next) {
             s->coll_item = NULL;
             s->coll_item_tail = NULL;
         }
     }
 
     if (index == SEL_FOLDERS) {
-        get_subfolders_for_folder(root, source->db.folders_tree, selected);
+        get_subfolders_for_folder(root, &source->db.folders.root, selected);
     }
     else if (index == SEL_ARTISTS) {
         // list of albums for artist
@@ -355,7 +357,7 @@ _create_item_tree_from_collection(ml_collection_t *coll, const char *filter, med
         // list of tracks for album
         ml_tree_item_t *tail = NULL;
         ml_tree_item_t *parent = root;
-        for (ml_string_t *s = coll->head; s; s = s->next) {
+        for (ml_collection_tree_node_t *s = coll->root.children; s; s = s->next) {
             ml_tree_item_t *item = _tree_item_alloc (s->row_id);
 
             get_list_of_tracks_for_album (item, s, selected);
@@ -379,7 +381,7 @@ _create_item_tree_from_collection(ml_collection_t *coll, const char *filter, med
 
     // cleanup
     if (coll) {
-        for (ml_string_t *s = coll->head; s; s = s->next) {
+        for (ml_collection_tree_node_t *s = coll->root.children; s; s = s->next) {
             s->coll_item = NULL;
             s->coll_item_tail = NULL;
         }

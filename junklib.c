@@ -32,7 +32,7 @@
 #include <stdlib.h>
 #include <string.h>
 #if HAVE_ICONV
-  #ifndef __MINGW32__
+  #if !defined(__MINGW32__) && !defined(__OpenBSD__)
   #define LIBICONV_PLUG
   #endif
   #include <iconv.h>
@@ -2733,6 +2733,33 @@ junk_id3v2_convert_23_to_24 (DB_id3v2_tag_t *tag23, DB_id3v2_tag_t *tag24) {
     return 0;
 }
 
+void
+junk_make_tdrc_string(char *tdrc, size_t tdrc_size, int year, int month, int day, int hour, int minute) {
+    if (year <= 0 || month <= 0 || day <= 0) {
+        return;
+    }
+    int n = snprintf (tdrc, tdrc_size, "%04d-%02d-%02d", year, month, day);
+    if (tdrc_size < n) {
+        tdrc[0] = 0;
+        return;
+    }
+
+    tdrc += n;
+    tdrc_size -= n;
+
+    if (hour < 0 || minute < 0) {
+        return;
+    }
+    if (hour == 0 && minute == 0) {
+        return;
+    }
+    n = snprintf (tdrc, tdrc_size, "-T%02d:%02d", hour, minute);
+    if (tdrc_size < n) {
+        tdrc[0] = 0;
+        return;
+    }
+}
+
 int
 junk_id3v2_convert_22_to_24 (DB_id3v2_tag_t *tag22, DB_id3v2_tag_t *tag24) {
     DB_id3v2_frame_t *f22;
@@ -2900,22 +2927,10 @@ junk_id3v2_convert_22_to_24 (DB_id3v2_tag_t *tag22, DB_id3v2_tag_t *tag24) {
     }
 
     char tdrc[100];
-    char *p = tdrc;
-    if (year > 0) {
-        int n = sprintf (p, "%04d", year);
-        p += n;
-        if (month) {
-            n = sprintf (p, "-%02d", month);
-            p += n;
-            if (day) {
-                n = sprintf (p, "-%02d", day);
-                p += n;
-                if (hour && minute) {
-                    n = sprintf (p, "-T%02d:%02d", hour, minute);
-                    p += n;
-                }
-            }
-        }
+    tdrc[0] = 0;
+    junk_make_tdrc_string(tdrc, sizeof (tdrc), year, month, day, hour, minute);
+
+    if (tdrc[0]) {
         DB_id3v2_frame_t *f24 = junk_id3v2_add_text_frame (tag24, "TDRC", tdrc);
         if (f24) {
             tail = f24;
@@ -3961,7 +3976,7 @@ junk_id3v2_load_txx (const char *sb_charset, int version_major, playItem_t *it, 
 }
 
 int
-junk_id3v2_add_genre (playItem_t *it, char *genre) {
+junk_id3v2_add_genre (playItem_t *it, char *genre, int text_size, int version_major) {
     int numeric = 0;
     if (genre[0] == '(') {
         // find matching parenthesis
@@ -4015,7 +4030,10 @@ junk_id3v2_add_genre (playItem_t *it, char *genre) {
         pl_add_meta (it, "genre", "Remix");
     }
     else {
-        pl_add_meta (it, "genre", genre);
+        if (version_major == 3) {
+            _split_multivalue (genre, text_size+1);
+        }
+        pl_append_meta_full (it, "genre", genre, text_size+1);
     }
 
     return 0;
@@ -4063,7 +4081,7 @@ junk_id3v2_set_metadata_from_frame (playItem_t *it, DB_id3v2_tag_t *id3v2_tag, D
                             junk_add_disc_meta (it, text);
                         }
                         else if (!strcmp (frameid, "TCON")) {
-                            junk_id3v2_add_genre (it, text);
+                            junk_id3v2_add_genre (it, text, text_size, version_major);
                         }
                         else {
                             if (version_major == 3 && _is_multivalue_field (frame_mapping[f+MAP_DDB])) {
@@ -4158,7 +4176,7 @@ junk_id3v2_set_metadata_from_frame (playItem_t *it, DB_id3v2_tag_t *id3v2_tag, D
                             junk_add_disc_meta (it, text);
                         }
                         else if (!strcmp (frameid, "TCO")) {
-                            junk_id3v2_add_genre (it, text);
+                            junk_id3v2_add_genre (it, text, text_size, version_major);
                         }
                         else {
                             if (_is_multivalue_field (frame_mapping[f+MAP_DDB])) {
