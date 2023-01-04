@@ -81,6 +81,7 @@ messagepump_free () {
     mutex_unlock (mutex);
     mutex_free (mutex);
     cond_free (cond);
+    mutex = 0;
 }
 
 static void

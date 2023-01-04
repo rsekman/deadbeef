@@ -105,6 +105,11 @@ static int streamer_is_buffering;
 
 static playlist_t *streamer_playlist;
 static playItem_t *playing_track;
+
+// If streaming_track has been removed from playlist, fallback to one of those tracks to pick next/prev.
+static playItem_t *next_track_to_play;
+static playItem_t *prev_track_to_play;
+
 static playItem_t *buffering_track;
 static float playtime; // total playtime of playing track
 static time_t started_timestamp; // result of calling time(NULL)
@@ -573,6 +578,13 @@ get_random_album (void) {
 static playItem_t *
 get_next_track (playItem_t *curr, ddb_shuffle_t shuffle, ddb_repeat_t repeat) {
     pl_lock ();
+
+    if (next_track_to_play != NULL) {
+        pl_item_ref(next_track_to_play);
+        pl_unlock();
+        return next_track_to_play;
+    }
+
     if (!streamer_playlist) {
         playlist_t *plt = plt_get_curr ();
         streamer_set_streamer_playlist (plt);
@@ -594,12 +606,14 @@ get_next_track (playItem_t *curr, ddb_shuffle_t shuffle, ddb_repeat_t repeat) {
         return NULL; // empty playlist
     }
 
-    playlist_t *item_plt = pl_get_playlist(curr);
-    if (!item_plt) {
-        curr = NULL;
-    }
-    if (item_plt) {
-        plt_unref (item_plt);
+    if (plt_get_item_idx (streamer_playlist, curr, PL_MAIN) == -1) {
+        playlist_t *item_plt = pl_get_playlist(curr);
+        if (!item_plt) {
+            curr = NULL;
+        }
+        if (item_plt) {
+            plt_unref (item_plt);
+        }
     }
 
     if (shuffle == DDB_SHUFFLE_TRACKS || shuffle == DDB_SHUFFLE_ALBUMS) { // shuffle
@@ -707,6 +721,12 @@ static playItem_t *
 get_prev_track (playItem_t *curr, ddb_shuffle_t shuffle, ddb_repeat_t repeat) {
     pl_lock ();
     
+    if (prev_track_to_play != NULL) {
+        pl_item_ref(prev_track_to_play);
+        pl_unlock();
+        return prev_track_to_play;
+    }
+
     // check if prev song is in this playlist
     if (curr && -1 == str_get_idx_of (curr)) {
         curr = NULL;
@@ -855,12 +875,59 @@ streamer_move_to_randomalbum (int r) {
     return 0;
 }
 
+static void
+streamer_set_next_track_to_play(playItem_t *next) {
+    if (next_track_to_play != NULL) {
+        pl_item_unref(next_track_to_play);
+        next_track_to_play = NULL;
+    }
+    next_track_to_play = next;
+    if (next_track_to_play) {
+        pl_item_ref(next_track_to_play);
+    }
+}
+
+static void
+streamer_set_prev_track_to_play(playItem_t *prev) {
+    if (prev_track_to_play != NULL) {
+        pl_item_unref(prev_track_to_play);
+        prev_track_to_play = NULL;
+    }
+    prev_track_to_play = prev;
+    if (prev_track_to_play) {
+        pl_item_ref(prev_track_to_play);
+    }
+}
+
 // playlist must call that whenever item was removed
 void
 streamer_song_removed_notify (playItem_t *it) {
     if (!mutex) {
         return; // streamer is not running
     }
+    streamer_lock();
+
+    playItem_t *next = NULL;
+    playItem_t *prev = NULL;
+
+    if (streaming_track == it || next_track_to_play == it) {
+        ddb_shuffle_t shuffle = streamer_get_shuffle ();
+        ddb_repeat_t repeat = streamer_get_repeat ();
+        streamer_set_next_track_to_play (NULL);
+        next = get_next_track (it, shuffle, repeat);
+        prev = get_prev_track (it, shuffle, repeat);
+    }
+    streamer_set_next_track_to_play (next);
+    streamer_set_prev_track_to_play (prev);
+
+    if (next != NULL) {
+        pl_item_unref(next);
+    }
+    if (prev != NULL) {
+        pl_item_unref(prev);
+    }
+
+    streamer_unlock();
 }
 
 static ddb_ctmap_t *streamer_ctmap;
@@ -1889,6 +1956,8 @@ streamer_free (void) {
         first_failed_track = NULL;
     }
     streamer_set_streaming_track(NULL);
+    streamer_set_next_track_to_play(NULL);
+    streamer_set_prev_track_to_play(NULL);
     streamer_set_playing_track(NULL);
     streamer_set_buffering_track(NULL);
     streamer_set_last_played(NULL);
@@ -2084,7 +2153,14 @@ streamer_set_volume_modifier (float (*modifier) (float delta_time)) {
 
 static void
 streamer_apply_soft_volume (char *bytes, int sz) {
+    if (audio_is_mute ()) {
+        memset (bytes, 0, sz);
+        return;
+    }
     DB_output_t *output = plug_get_output ();
+    if (output->has_volume) {
+        return;
+    }
 
     float mod = 1.f;
 
@@ -2095,66 +2171,58 @@ streamer_apply_soft_volume (char *bytes, int sz) {
 
     float vol = volume_get_amp () * mod;
 
-    if (!output->has_volume) {
-        int mult = 1-audio_is_mute ();
-        char *stream = bytes;
-        int bytesread = sz;
-        if (output->fmt.bps == 16) {
-            mult *= 1000;
-            int16_t ivolume = (int16_t)(vol * mult);
-            if (ivolume != 1000) {
-                int half = bytesread/2;
-                for (int i = 0; i < half; i++) {
-                    int16_t sample = *((int16_t*)stream);
-                    *((int16_t*)stream) = (int16_t)(((int32_t)sample) * ivolume / 1000);
-                    stream += 2;
-                }
+    char *stream = bytes;
+    int bytesread = sz;
+    if (output->fmt.bps == 16) {
+        int16_t ivolume = (int16_t)(vol * 1000);
+        if (ivolume != 1000) {
+            int half = bytesread/2;
+            for (int i = 0; i < half; i++) {
+                int16_t sample = *((int16_t*)stream);
+                *((int16_t*)stream) = (int16_t)(((int32_t)sample) * ivolume / 1000);
+                stream += 2;
             }
         }
-        else if (output->fmt.bps == 8) {
-            mult *= 255;
-            int16_t ivolume = (int16_t)(vol * mult);
-            if (ivolume != 255) {
-                for (int i = 0; i < bytesread; i++) {
-                    *stream = (int8_t)(((int32_t)(*stream)) * ivolume / 1000);
-                    stream++;
-                }
+    }
+    else if (output->fmt.bps == 8) {
+        int16_t ivolume = (int16_t)(vol * 255);
+        if (ivolume != 255) {
+            for (int i = 0; i < bytesread; i++) {
+                *stream = (int8_t)(((int32_t)(*stream)) * ivolume / 255);
+                stream++;
             }
         }
-        else if (output->fmt.bps == 24) {
-            mult *= 1000;
-            int16_t ivolume = (int16_t)(vol * mult);
-            if (ivolume != 1000) {
-                int third = bytesread/3;
-                for (int i = 0; i < third; i++) {
-                    int32_t sample = ((unsigned char)stream[0]) | ((unsigned char)stream[1]<<8) | ((signed char)stream[2]<<16);
-                    int32_t newsample = (int32_t)((int64_t)sample * ivolume / 1000);
-                    stream[0] = (newsample&0x0000ff);
-                    stream[1] = (newsample&0x00ff00)>>8;
-                    stream[2] = (newsample&0xff0000)>>16;
-                    stream += 3;
-                }
+    }
+    else if (output->fmt.bps == 24) {
+        int16_t ivolume = (int16_t)(vol * 1000);
+        if (ivolume != 1000) {
+            int third = bytesread/3;
+            for (int i = 0; i < third; i++) {
+                int32_t sample = ((unsigned char)stream[0]) | ((unsigned char)stream[1]<<8) | ((signed char)stream[2]<<16);
+                int32_t newsample = (int32_t)((int64_t)sample * ivolume / 1000);
+                stream[0] = (newsample&0x0000ff);
+                stream[1] = (newsample&0x00ff00)>>8;
+                stream[2] = (newsample&0xff0000)>>16;
+                stream += 3;
             }
         }
-        else if (output->fmt.bps == 32 && !output->fmt.is_float) {
-            mult *= 1000;
-            int16_t ivolume = (int16_t)(vol * mult);
-            if (ivolume != 1000) {
-                for (int i = 0; i < bytesread/4; i++) {
-                    int32_t sample = *((int32_t*)stream);
-                    int32_t newsample = (int32_t)((int64_t)sample * ivolume / 1000);
-                    *((int32_t*)stream) = newsample;
-                    stream += 4;
-                }
+    }
+    else if (output->fmt.bps == 32 && !output->fmt.is_float) {
+        int16_t ivolume = (int16_t)(vol * 1000);
+        if (ivolume != 1000) {
+            for (int i = 0; i < bytesread/4; i++) {
+                int32_t sample = *((int32_t*)stream);
+                int32_t newsample = (int32_t)((int64_t)sample * ivolume / 1000);
+                *((int32_t*)stream) = newsample;
+                stream += 4;
             }
         }
-        else if (output->fmt.bps == 32 && output->fmt.is_float) {
-            float fvolume = vol * (1-audio_is_mute ());
-            if (fvolume != 1.f) {
-                for (int i = 0; i < bytesread/4; i++) {
-                    *((float*)stream) = (*((float*)stream)) * fvolume;
-                    stream += 4;
-                }
+    }
+    else if (output->fmt.bps == 32 && output->fmt.is_float) {
+        if (vol != 1.f) {
+            for (int i = 0; i < bytesread/4; i++) {
+                *((float*)stream) = (*((float*)stream)) * vol;
+                stream += 4;
             }
         }
     }
@@ -2475,6 +2543,8 @@ _play_track (playItem_t *it, int startpaused) {
     }
 
     streamer_set_playing_track(NULL);
+    streamer_set_next_track_to_play(NULL);
+    streamer_set_prev_track_to_play(NULL);
     streamer_set_buffering_track (it);
     handle_track_change (prev, it);
 
@@ -2532,21 +2602,20 @@ play_index (int idx, int startpaused) {
 
     playqueue_clear ();
 
+    plt = plt_get_curr ();
+
+    streamer_set_streamer_playlist (plt);
+
     if (idx < 0) {
+        plt_reshuffle (plt, NULL, NULL);
+        streamer_set_last_played(NULL);
         goto error;
     }
 
-    plt = plt_get_curr ();
     it = plt_get_item_for_idx (plt, idx, PL_MAIN);
     if (!it) {
         goto error;
     }
-
-    pl_lock ();
-    if (plt != streamer_playlist) {
-        streamer_set_streamer_playlist (plt);
-    }
-    pl_unlock();
 
     // rebuild shuffle order
     _rebuild_shuffle_albums_after_manual_trigger (plt, it);

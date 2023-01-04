@@ -77,6 +77,7 @@ filter "configurations:debug or release"
 
 
 filter "platforms:Windows"
+  WINDOWS_SYSTEM_PREFIX = (os.getenv("MSYSTEM_PREFIX") or '')
   buildoptions {
     "-include shared/windows/mingw32_layer.h",
     "-fno-builtin"
@@ -86,7 +87,7 @@ filter "platforms:Windows"
   }
   includedirs {
     "shared/windows/include",
-    os.getenv("MSYSTEM_PREFIX") .. "/include/opus",
+    WINDOWS_SYSTEM_PREFIX .. "/include/opus",
     "xdispatch_ddb/include"
   }
   libdirs {
@@ -239,11 +240,13 @@ end
 if _OPTIONS["plugin-aac"] == "auto" or _OPTIONS["plugin-aac"] == nil then
   -- hard-coded :(
   -- todo: linuxify
-  if os.outputof("ls " .. os.getenv("MSYSTEM_PREFIX") .. "/include/neaacdec.h") == nil  then
-    print ("\27[93m" .. "neaacdec.h not found in \"" .. os.getenv("MSYSTEM_PREFIX") .. "/include/\", run premake5 with \"--plugin-aac=enabled\" to force enable aac plugin" ..  "\27[39m")
+  if os.outputof("ls " .. WINDOWS_SYSTEM_PREFIX .. "/include/neaacdec.h") == nil  then
+    print ("\27[93m" .. "neaacdec.h not found in \"" .. WINDOWS_SYSTEM_PREFIX .. "/include/\", run premake5 with \"--plugin-aac=enabled\" to force enable aac plugin" ..  "\27[39m")
     _OPTIONS["plugin-aac"] = "disabled"
+    _OPTIONS["plugin-alac"] = "disabled"
   else
     _OPTIONS["plugin-aac"] = "enabled"
+    _OPTIONS["plugin-alac"] = "enabled"
   end
 end
 
@@ -323,8 +326,6 @@ project "dca_plugin"
     "plugins/dca/bitstream.c",
     "plugins/dca/downmix.c"
   }
-  prebuildcommands {"touch plugins/dca/config.h"}
-  postbuildcommands {"rm plugins/dca/config.h"}
 end
 
 if option ("plugin-dumb") then
@@ -520,7 +521,7 @@ project "gme_plugin"
     "plugins/gme/game-music-emu-0.6pre/gme/",
     "plugins/gme/game-music-emu-0.6pre"
   }
-  defines {"GME_VERSION_055"}
+  defines {"GME_VERSION_055","HAVE_STDINT_H"}
   links {"stdc++", "z"}
   filter 'files:**.cpp'
     buildoptions {"-include cstdint"}
@@ -571,7 +572,7 @@ end
 
 if option ("plugin-sc68") then
 project "sc68_plugin"
-  targetname "sc68"
+  targetname "in_sc68"
   files {
     "plugins/sc68/in_sc68.c",
     "plugins/sc68/file68/src/*.c",
@@ -869,6 +870,8 @@ project "rg_scanner"
     "plugins/rg_scanner/*.c",
     "plugins/rg_scanner/ebur128/*.c"
   }
+  buildoptions {"-fblocks"}
+  links {"dispatch", "BlocksRuntime"}
 end
 
 if option ("plugin-converter") then
@@ -1106,7 +1109,7 @@ project "musepack_plugin"
   links {"m"}
 end
 
-if option ("plugin-artwork", "libjpeg libpng zlib flac ogg") then
+if option ("plugin-artwork", "flac ogg vorbisfile") then
 project "artwork_plugin"
   targetname "artwork"
   files {
@@ -1116,7 +1119,8 @@ project "artwork_plugin"
   includedirs {"../libmp4ff", "./shared"}
   buildoptions {"-fblocks"}
   defines {"USE_OGG=1", "USE_VFS_CURL", "USE_METAFLAC", "USE_MP4FF", "USE_TAGGING=1"}
-  links {"jpeg", "png", "z", "FLAC", "ogg", "mp4p", "dispatch", "BlocksRuntime"}
+  pkgconfig ("flac ogg vorbisfile")
+  links {"FLAC", "ogg", "vorbisfile", "mp4p", "dispatch", "BlocksRuntime"}
 else
   options_dic["plugin-artwork"] = "no"
 end
@@ -1171,6 +1175,16 @@ project "tta"
   files {
     "plugins/tta/ttaplug.c",
     "plugins/tta/ttadec.c"
+  }
+end
+
+if option ("plugin-libretro") then
+project "ddb_dsp_libretro"
+  files {
+    "external/ddb_dsp_libretro/libretro.cpp"
+  }
+  buildoptions {
+    "-msse3"
   }
 end
 

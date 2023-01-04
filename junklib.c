@@ -71,7 +71,6 @@ int enable_shift_jis_detection = 0;
 #define MAX_CUESHEET_FRAME_SIZE 10000
 #define MAX_APEV2_FRAME_SIZE 2000000
 #define MAX_ID3V2_FRAME_SIZE 100000
-#define MAX_ID3V2_APIC_FRAME_SIZE 2000000
 
 #define UTF8_STR "utf-8"
 
@@ -509,6 +508,22 @@ ConvertUTF8toUTF16BE (const UTF8** sourceStart, const UTF8* sourceEnd, UTF16** t
     return res;
 }
 
+// Copy a buffer to a memory address which is (at least) 2-byte aligned.
+// If the input buffer is already aligned -- return NULL.
+static char *
+_get_aligned_copy (const char *in, size_t inlen) {
+    if (((uintptr_t)in&1) == 0 || inlen == 0 || in == NULL) {
+        return NULL;
+    }
+
+    char *aligned = malloc (inlen);
+    if (aligned == NULL) {
+        return NULL;
+    }
+    memcpy (aligned, in, inlen);
+    return aligned;
+}
+
 int
 ddb_iconv (const char *cs_out, const char *cs_in, char *out, int outlen, const char *in, int inlen) {
     long len = -1;
@@ -552,7 +567,16 @@ ddb_iconv (const char *cs_out, const char *cs_in, char *out, int outlen, const c
         }
         else if (!strcasecmp (cs_in, "UTF-16LE") || !strcasecmp (cs_in, "UCS-2LE")) {
             char *target = out;
+
+            char *aligned_in = _get_aligned_copy (in, inlen);
+            if (aligned_in != NULL) {
+                in = aligned_in;
+            }
+
             ConversionResult result = ConvertUTF16toUTF8 ((const UTF16**)&in, (const UTF16*)(in + inlen), (UTF8**)&target, (UTF8*)(out + outlen), strictConversion);
+
+            free (aligned_in);
+
             if (result == conversionOK) {
                 *target = 0;
                 len = target - out;
@@ -560,7 +584,7 @@ ddb_iconv (const char *cs_out, const char *cs_in, char *out, int outlen, const c
         }
         else if (!strcasecmp (cs_in, "UTF-16BE") || !strcasecmp (cs_in, "UCS-2BE")) {
             // convert to big endian
-            char temp[inlen];
+            char *temp = malloc(inlen);
             for (int i = 0; i < inlen; i += 2) {
                 temp[i] = in[i+1];
                 temp[i+1] = in[i];
@@ -568,6 +592,7 @@ ddb_iconv (const char *cs_out, const char *cs_in, char *out, int outlen, const c
             in = temp;
             char *target = out;
             ConversionResult result = ConvertUTF16toUTF8 ((const UTF16**)&in, (const UTF16*)(in + inlen), (UTF8**)&target, (UTF8*)(out + outlen), strictConversion);
+            free (temp);
             if (result == conversionOK) {
                 *target = 0;
                 len = target - out;
@@ -2736,6 +2761,7 @@ junk_id3v2_convert_23_to_24 (DB_id3v2_tag_t *tag23, DB_id3v2_tag_t *tag24) {
 void
 junk_make_tdrc_string(char *tdrc, size_t tdrc_size, int year, int month, int day, int hour, int minute) {
     if (year <= 0 || month <= 0 || day <= 0) {
+        tdrc[0] = 0;
         return;
     }
     int n = snprintf (tdrc, tdrc_size, "%04d-%02d-%02d", year, month, day);
@@ -4379,17 +4405,24 @@ junk_id3v2_read_full (playItem_t *it, DB_id3v2_tag_t *tag_store, DB_FILE *fp) {
             readptr += 2;
 
             if (!strcmp (frameid, "APIC")) {
-                if (sz > MAX_ID3V2_APIC_FRAME_SIZE) {
-                    trace ("junk_id3v2_read_full: frame %s size is too big (%d), discarded\n", frameid, sz);
+                // don't attempt to parse APIC when we're not planning to use it
+                if (tag_store == NULL) {
                     readptr += sz;
                     continue;
                 }
             }
-            else if (sz > MAX_ID3V2_FRAME_SIZE || readptr - tag + sz > size) {
+            else if (sz > MAX_ID3V2_FRAME_SIZE) {
                 trace ("junk_id3v2_read_full: frame %s size is too big (%d), discarded\n", frameid, sz);
                 readptr += sz;
                 continue;
             }
+
+            if (readptr - tag + sz > size) {
+                trace ("junk_id3v2_read_full: frame %s size is crossing beyond the end of tag (%d), discarded\n", frameid, sz);
+                readptr += sz;
+                continue;
+            }
+
             int synched_size = sz;
             if (unsync) {
                 synched_size = junklib_id3v2_sync_frame (version_major, readptr, sz);
@@ -4510,7 +4543,8 @@ junk_id3v2_read_full (playItem_t *it, DB_id3v2_tag_t *tag_store, DB_FILE *fp) {
                 break; // frame must be at least 1 byte long
             }
             if (!strcmp (frameid, "PIC")) {
-                if (sz > MAX_ID3V2_APIC_FRAME_SIZE) {
+                // don't attempt to parse APIC when we're not planning to use it
+                if (tag_store == NULL) {
                     trace ("junk_id3v2_read_full: frame %s size is too big (%d), discarded\n", frameid, sz);
                     readptr += sz;
                     continue;
@@ -4521,6 +4555,13 @@ junk_id3v2_read_full (playItem_t *it, DB_id3v2_tag_t *tag_store, DB_FILE *fp) {
                 readptr += sz;
                 continue;
             }
+
+            if (readptr - tag + sz > size) {
+                trace ("junk_id3v2_read_full: frame %s size is crossing beyond the end of tag (%d), discarded\n", frameid, sz);
+                readptr += sz;
+                continue;
+            }
+
             int synched_size = sz;
             if (unsync) {
                 synched_size = junklib_id3v2_sync_frame (version_major, readptr, sz);

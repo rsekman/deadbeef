@@ -492,7 +492,7 @@ ffmpeg_seek_sample (DB_fileinfo_t *_info, int sample) {
 
 static int
 ffmpeg_seek (DB_fileinfo_t *_info, float time) {
-    return ffmpeg_seek_sample64 (_info, time * _info->fmt.samplerate);
+    return ffmpeg_seek_sample64 (_info, (int64_t)((double)time * (int64_t)_info->fmt.samplerate));
 }
 
 static const char *map[] = {
@@ -929,6 +929,7 @@ static ddb_decoder2_t plugin = {
     .decoder.plugin.version_major = 1,
     .decoder.plugin.version_minor = 2,
     .decoder.plugin.type = DB_PLUGIN_DECODER,
+    .decoder.plugin.flags = DDB_PLUGIN_FLAG_IMPLEMENTS_DECODER2,
     .decoder.plugin.id = "ffmpeg",
     .decoder.plugin.name = "FFMPEG audio player",
     .decoder.plugin.descr = "decodes audio formats using FFMPEG libavcodec",

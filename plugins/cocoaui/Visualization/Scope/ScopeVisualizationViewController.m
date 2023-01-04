@@ -6,11 +6,14 @@
 //  Copyright © 2021 Oleksiy Yakovenko. All rights reserved.
 //
 
+#import "AAPLNSView.h"
 #import "AAPLView.h"
 #import "ScopePreferencesViewController.h"
 #import "ScopePreferencesWindowController.h"
-#import "ScopeRenderer.h"
+#import "ScopeShaderTypes.h"
 #import "ScopeVisualizationViewController.h"
+#import "ShaderRenderer.h"
+#import "ShaderRendererTypes.h"
 #import "VisualizationSettingsUtil.h"
 #include "deadbeef.h"
 #include "scope.h"
@@ -20,12 +23,15 @@ extern DB_functions_t *deadbeef;
 static NSString * const kWindowIsVisibleKey = @"view.window.isVisible";
 static void *kIsVisibleContext = &kIsVisibleContext;
 
-@interface ScopeVisualizationViewController() <AAPLViewDelegate>
+@interface ScopeVisualizationViewController() <AAPLViewDelegate, ShaderRendererDelegate>
 
 @property (nonatomic) BOOL isListening;
 @property (nonatomic) ScopeScaleMode scaleMode;
 @property (nonatomic,readonly) CGFloat scaleFactor;
 @property (nonatomic) NSPopover *preferencesPopover;
+
+@property (nonatomic) NSColor *baseColor;
+@property (nonatomic) NSColor *backgroundColor;
 
 @end
 
@@ -33,7 +39,7 @@ static void *kIsVisibleContext = &kIsVisibleContext;
     ddb_waveformat_t _fmt;
     ddb_scope_t _scope;
     ddb_scope_draw_data_t _draw_data;
-    ScopeRenderer *_renderer;
+    ShaderRenderer *_renderer;
 }
 
 static void vis_callback (void *ctx, const ddb_audio_data_t *data) {
@@ -57,9 +63,33 @@ static void vis_callback (void *ctx, const ddb_audio_data_t *data) {
     ddb_scope_draw_data_dealloc(&_draw_data);
 }
 
-- (void)awakeFromNib {
-    [super awakeFromNib];
+- (void)loadView {
+    self.view = [[AAPLNSView alloc] initWithFrame:NSZeroRect];
+    self.view.translatesAutoresizingMaskIntoConstraints = NO;
+}
 
+- (void)setupMetalRenderer {
+    id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+
+    AAPLView *view = (AAPLView *)self.view;
+
+    // Set the device for the layer so the layer can create drawable textures that can be rendered to
+    // on this device.
+    view.metalLayer.device = device;
+
+    // Set this class as the delegate to receive resize and render callbacks.
+    view.delegate = self;
+
+    view.metalLayer.pixelFormat = MTLPixelFormatBGRA8Unorm;
+
+    _renderer = [[ShaderRenderer alloc] initWithMetalDevice:device
+                                        drawablePixelFormat:view.metalLayer.pixelFormat
+                                         fragmentShaderName:@"scopeFragmentShader"
+    ];
+    _renderer.delegate = self;
+}
+
+- (void)viewDidLoad {
     NSMenu *menu = [NSMenu new];
     NSMenuItem *renderModeMenuItem = [menu addItemWithTitle:@"Rendering Mode" action:nil keyEquivalent:@""];
     NSMenuItem *scaleModeMenuItem = [menu addItemWithTitle:@"Scale" action:nil keyEquivalent:@""];
@@ -94,22 +124,8 @@ static void vis_callback (void *ctx, const ddb_audio_data_t *data) {
     ddb_scope_init(&_scope);
     _scope.mode = DDB_SCOPE_MULTICHANNEL;
 
-    id<MTLDevice> device = MTLCreateSystemDefaultDevice();
-
-    AAPLView *view = (AAPLView *)self.view;
-
-    // Set the device for the layer so the layer can create drawable textures that can be rendered to
-    // on this device.
-    view.metalLayer.device = device;
-
-    // Set this class as the delegate to receive resize and render callbacks.
-    view.delegate = self;
-
-    view.metalLayer.pixelFormat = MTLPixelFormatBGRA8Unorm;
-
-    _renderer = [[ScopeRenderer alloc] initWithMetalDevice:device
-                                      drawablePixelFormat:view.metalLayer.pixelFormat];
-    _renderer.baseColor = VisualizationSettingsUtil.shared.baseColor;
+    [self setupMetalRenderer];
+    self.baseColor = VisualizationSettingsUtil.shared.baseColor;
 }
 
 - (void)updateVisListening {
@@ -230,10 +246,6 @@ static void vis_callback (void *ctx, const ddb_audio_data_t *data) {
     [self.preferencesPopover showRelativeToRect:NSZeroRect ofView:self.view preferredEdge:NSRectEdgeMaxY];
 }
 
-- (void)drawableResize:(CGSize)size {
-    [_renderer drawableResize:size];
-}
-
 - (CGFloat)scaleFactor {
     switch (self.scaleMode) {
     case ScopeScaleModeAuto:
@@ -266,16 +278,6 @@ static void vis_callback (void *ctx, const ddb_audio_data_t *data) {
     }
 
     return YES;
-}
-
-- (void)renderToMetalLayer:(nonnull CAMetalLayer *)layer
-{
-    if (![self updateDrawData]) {
-        return;
-    }
-
-    float scale = (float)(self.view.window.backingScaleFactor / self.scaleFactor);
-    [_renderer renderToMetalLayer:layer drawData:&_draw_data scale:scale];
 }
 
 - (BOOL)validateMenuItem:(NSMenuItem *)menuItem {
@@ -330,7 +332,7 @@ static void vis_callback (void *ctx, const ddb_audio_data_t *data) {
     if (color == nil) {
         color = VisualizationSettingsUtil.shared.baseColor;
     }
-    _renderer.baseColor = color;
+    self.baseColor = color;
 
     color = nil;
     if (self.settings.useCustomBackgroundColor) {
@@ -339,7 +341,7 @@ static void vis_callback (void *ctx, const ddb_audio_data_t *data) {
     if (color == nil) {
         color = VisualizationSettingsUtil.shared.backgroundColor;
     }
-    _renderer.backgroundColor = color;
+    self.backgroundColor = color;
 
 }
 
@@ -348,5 +350,65 @@ static void vis_callback (void *ctx, const ddb_audio_data_t *data) {
         [self updateRendererSettings];
     }
 }
+
+- (NSColor *)baselor {
+#ifdef MAC_OS_X_VERSION_10_14
+    if (@available(macOS 10.14, *)) {
+        return NSColor.controlAccentColor;
+    }
+#endif
+    return NSColor.alternateSelectedControlColor;
+}
+
+// Called by the timer in superclass
+- (void)draw {
+    self.view.needsDisplay = YES;
+}
+
+#pragma mark - AAPLViewDelegate
+
+- (void)drawableResize:(CGSize)size {
+    [_renderer drawableResize:size];
+}
+
+- (void)renderToMetalLayer:(nonnull CAMetalLayer *)layer
+{
+    if (![self updateDrawData]) {
+        return;
+    }
+
+    [_renderer renderToMetalLayer:layer];
+}
+
+#pragma mark - ShaderRendererDelegate
+
+- (void)applyFragParamsWithViewport:(vector_uint2)viewport device:(id<MTLDevice>)device encoder:(id<MTLRenderCommandEncoder>)encoder {
+
+    float scale = (float)(self.view.window.backingScaleFactor / self.scaleFactor);
+
+    struct ScopeFragParams params;
+    NSColor *color = [self.baseColor colorUsingColorSpace:NSColorSpace.sRGBColorSpace];
+    NSColor *backgroundColor = [self.backgroundColor colorUsingColorSpace:NSColorSpace.sRGBColorSpace];
+    CGFloat components[4];
+    [color getComponents:components];
+    CGFloat backgroundComponents[4];
+    [backgroundColor getComponents:backgroundComponents];
+
+    params.color = (vector_float4){ (float)components[0], (float)components[1], (float)components[2], 1 };
+    params.backgroundColor = (vector_float4){ (float)backgroundComponents[0], (float)backgroundComponents[1], (float)backgroundComponents[2], 1 };
+    params.size.x = viewport.x;
+    params.size.y = viewport.y;
+    params.point_count = _draw_data.point_count;
+    params.channels = _draw_data.mode == DDB_SCOPE_MONO ? 1 : _draw_data.channels;
+    params.scale = scale;
+    [encoder setFragmentBytes:&params length:sizeof (params) atIndex:0];
+
+    // Metal documentation states that MTLBuffer should be used for buffers larger than 4K in size.
+    // Alternative is to use setFragmentBytes, which also works, but could have compatibility issues on older hardware.
+    id<MTLBuffer> buffer = [device newBufferWithBytes:_draw_data.points length:_draw_data.point_count * sizeof (ddb_scope_point_t) * params.channels options:0];
+
+    [encoder setFragmentBuffer:buffer offset:0 atIndex:1];
+}
+
 
 @end

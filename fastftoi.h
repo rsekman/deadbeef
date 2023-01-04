@@ -53,6 +53,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define __FORCE_SSE2__
 #endif
 
+#ifdef __SSE3__ // that comes from -msse3
+#define __FORCE_SSE3__
+#endif
+
 /* Special i386 GCC implementation */
 #if defined(__i386__) && defined(__GNUC__) && !defined(__BEOS__) && !defined(__FORCE_SSE2__)
 #  define FPU_CONTROL
@@ -116,17 +120,33 @@ static __inline void fpu_restore(fpu_control fpu){
 #endif /* Special MSVC 32 bit implementation */
 
 
-/* Optimized code path for x86_64 builds. Uses SSE2 intrinsics. This can be
-   done safely because all x86_64 CPUs supports SSE2. */
-#if (defined(__FORCE_SSE2__)) || (defined(_MSC_VER) && defined(_WIN64)) || (defined(__GNUC__) && defined (__x86_64__))
-#pragma warning "using sse2 for ftoi"
+#if (defined(__FORCE_SSE3__)) || (defined(_MSC_VER) && defined(_WIN64)) || (defined(__GNUC__) && defined (__x86_64__))
 #  define FPU_CONTROL
 
 typedef int16_t fpu_control;
 
 #include <emmintrin.h>
-static __inline int ftoi(double f){
-        return _mm_cvtsd_si32(_mm_load_sd(&f));
+static __inline int ftoi(float f){
+    return _mm_cvtt_ss2si(_mm_load_ss(&f));
+}
+
+static __inline void fpu_setround(fpu_control *fpu){
+}
+
+static __inline void fpu_restore(fpu_control fpu){
+}
+
+
+/* Optimized code path for x86_64 builds. Uses SSE2 intrinsics. This can be
+   done safely because all x86_64 CPUs supports SSE2. */
+#elif (defined(__FORCE_SSE2__)) || (defined(_MSC_VER) && defined(_WIN64)) || (defined(__GNUC__) && defined (__x86_64__))
+#  define FPU_CONTROL
+
+typedef int16_t fpu_control;
+
+#include <emmintrin.h>
+static __inline int ftoi(float f){
+        return _mm_cvtt_ss2si(_mm_load_ss(&f));
 }
 
 static __inline void fpu_setround(fpu_control *fpu){

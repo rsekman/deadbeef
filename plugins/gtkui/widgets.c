@@ -170,6 +170,7 @@ typedef struct {
     ddb_scope_draw_data_t draw_data;
 
     uint32_t draw_color;
+    uint32_t background_color;
 
     cairo_surface_t *surf;
 
@@ -192,6 +193,10 @@ typedef struct {
     GtkWidget *fragment_duration_500ms_item;
 } w_scope_t;
 
+
+#define SpectrumVisXOffset 40
+#define SpectrumVisYOffset 12
+
 typedef struct {
     ddb_gtkui_widget_t base;
     ddb_gtkui_widget_extended_api_t exapi;
@@ -209,6 +214,7 @@ typedef struct {
     float grid_color[3];
     float peak_color[3];
     float bar_color[3];
+    float background_color[3];
 
     cairo_surface_t *surf;
 
@@ -2363,8 +2369,8 @@ _alpha_blend (uint32_t color, uint32_t background_color, float alpha) {
 
 static inline void
 _draw_vline_aa (uint8_t * restrict data, int stride, int x0, float y0, float y1, uint32_t color, uint32_t background_color) {
-    int floor_y0 = ftoi(floor(y0));
-    int ceil_y1 = ftoi(ceil(y1));
+    int floor_y0 = ftoi(floorf(y0));
+    int ceil_y1 = ftoi(ceilf(y1));
     uint32_t *ptr = (uint32_t*)&data[floor_y0*stride+x0*4];
     int y = floor_y0;
     while (y <= ceil_y1) {
@@ -2388,16 +2394,24 @@ _draw_vline_aa (uint8_t * restrict data, int stride, int x0, float y0, float y1,
     }
 }
 
+static uint32_t _gdk_color_convert_to_uint32(const GdkColor *base_color) {
+    uint8_t red = (base_color->red & 0xff00) >> 8;
+    uint8_t green = (base_color->green & 0xff00) >> 8;
+    uint8_t blue = (base_color->blue & 0xff00) >> 8;
+
+    uint32_t color = (0xff<<24) | (red<<16) | (green<<8) | blue;
+    return color;
+}
+
 static void
 _scope_update_preferences (w_scope_t *scope) {
-    GdkColor color;
-    gtkui_get_vis_custom_base_color(&color);
+    GdkColor base_color;
+    gtkui_get_vis_custom_base_color(&base_color);
+    scope->draw_color = _gdk_color_convert_to_uint32(&base_color);
 
-    uint8_t red = (color.red & 0xff00) >> 8;
-    uint8_t green = (color.green & 0xff00) >> 8;
-    uint8_t blue = (color.blue & 0xff00) >> 8;
-
-    scope->draw_color = (0xff<<24) | (red<<16) | (green<<8) | blue;
+    GdkColor background_color;
+    gtkui_get_vis_custom_background_color(&background_color);
+    scope->background_color = _gdk_color_convert_to_uint32(&background_color);
 }
 
 static void
@@ -2473,7 +2487,20 @@ scope_draw_cairo (GtkWidget *widget, cairo_t *cr, gpointer user_data) {
         return FALSE;
     }
     int stride = cairo_image_surface_get_stride (w->surf);
-    memset (data, 0, draw_rect.height * stride);
+
+//    memset (data, 0, draw_rect.height * stride);
+
+    // fill with background color
+    uint8_t *color_data = data;
+    for (int y = 0; y < draw_rect.height; y++) {
+        uint32_t *row_data = (uint32_t *)color_data;
+        for (int x = 0; x < draw_rect.width; x++) {
+            *row_data = w->background_color;
+            row_data++;
+        }
+        color_data += stride;
+    }
+
     if (w->draw_data.point_count != 0 && draw_rect.height > 2) {
 
         int width = w->draw_data.point_count;
@@ -2487,7 +2514,7 @@ scope_draw_cairo (GtkWidget *widget, cairo_t *cr, gpointer user_data) {
             for (int x = 0; x < width; x++) {
                 float ymin = min(draw_rect.height-1, max(0, minmax->ymin));
                 float ymax = min(draw_rect.height-1, max(0, minmax->ymax));
-                _draw_vline_aa (data, stride, x, ymin, ymax, w->draw_color, 0x0);
+                _draw_vline_aa (data, stride, x, ymin, ymax, w->draw_color, w->background_color);
                 minmax++;
             }
         }
@@ -2921,7 +2948,6 @@ _spectrum_update_preferences (w_spectrum_t *spectrum) {
     GdkColor color;
     gtkui_get_vis_custom_base_color(&color);
 
-
     spectrum->grid_color[0] = 0.5f;
     spectrum->grid_color[1] = 0.5f;
     spectrum->grid_color[2] = 0.5f;
@@ -2938,20 +2964,22 @@ _spectrum_update_preferences (w_spectrum_t *spectrum) {
     spectrum->bar_color[0] = color.red / 65535.f;
     spectrum->bar_color[1] = color.green / 65535.f;
     spectrum->bar_color[2] = color.blue / 65535.f;
+
+    gtkui_get_vis_custom_background_color(&color);
+    spectrum->background_color[0] = color.red / 65535.f;
+    spectrum->background_color[1] = color.green / 65535.f;
+    spectrum->background_color[2] = color.blue / 65535.f;
 }
 
 static void
 _spectrum_draw_grid(w_spectrum_t *w, cairo_t *cr, GtkAllocation size) {
     // horz lines, db scale
     float lower = -floor(w->analyzer.db_lower_bound);
-    for (int db = 10; db < lower; db += 10) {
-        float y = (float)(db / lower) * size.height;
-        if (y >= size.height) {
-            break;
-        }
+    for (int db = 0; db < lower; db += 10) {
+        float y = (float)(db / lower) * (size.height - SpectrumVisYOffset);
 
-        cairo_move_to (cr, 0, size.height-y);
-        cairo_line_to (cr, size.width-1, size.height-y);
+        cairo_move_to (cr, SpectrumVisXOffset, y + SpectrumVisYOffset);
+        cairo_line_to (cr, size.width-1, y + SpectrumVisYOffset);
     }
 
     static const double dash[2] = {1, 2};
@@ -2962,16 +2990,13 @@ _spectrum_draw_grid(w_spectrum_t *w, cairo_t *cr, GtkAllocation size) {
     // db text
     cairo_set_font_size(cr, 10);
 
-    for (int db = 10; db < lower; db += 10) {
-        float y = (float)(db / lower) * size.height;
-        if (y >= size.height) {
-            break;
-        }
+    for (int db = 0; db < lower; db += 10) {
+        float y = (float)(db / lower) * (size.height - SpectrumVisYOffset);
 
         char str[20];
         snprintf (str, sizeof (str), "%d dB", -db);
 
-        cairo_move_to(cr, 0, y + 9);
+        cairo_move_to(cr, 0, y + 9 + SpectrumVisYOffset);
         cairo_show_text(cr, str);
     }
 }
@@ -2984,7 +3009,7 @@ _spectrum_draw_frequency_labels (w_spectrum_t *w, cairo_t *cr, GtkAllocation siz
             continue;
         }
 
-        cairo_move_to(cr, w->draw_data.label_freq_positions[i], 9);
+        cairo_move_to(cr, w->draw_data.label_freq_positions[i] + SpectrumVisXOffset, 9);
         cairo_show_text(cr, w->draw_data.label_freq_texts[i]);
     }
 }
@@ -2996,7 +3021,7 @@ spectrum_draw (GtkWidget *widget, cairo_t *cr, gpointer user_data) {
 
     _spectrum_update_listening (w);
 
-    cairo_set_source_rgb (cr, 0, 0, 0);
+    cairo_set_source_rgb (cr, w->background_color[0], w->background_color[1], w->background_color[2]);
     cairo_paint (cr);
 
     if (w->input_data.nframes == 0) {
@@ -3011,7 +3036,8 @@ spectrum_draw (GtkWidget *widget, cairo_t *cr, gpointer user_data) {
     deadbeef->mutex_lock (w->mutex);
         ddb_analyzer_process(&w->analyzer, w->input_data.fmt->samplerate, w->input_data.fmt->channels, w->input_data.data, w->input_data.nframes);
         ddb_analyzer_tick(&w->analyzer);
-        ddb_analyzer_get_draw_data(&w->analyzer, a.width, a.height, &w->draw_data);
+
+        ddb_analyzer_get_draw_data(&w->analyzer, a.width - SpectrumVisXOffset, a.height - SpectrumVisYOffset, &w->draw_data);
     deadbeef->mutex_unlock(w->mutex);
 
     cairo_set_source_rgb(cr, w->grid_color[0], w->grid_color[1], w->grid_color[2]);
@@ -3027,7 +3053,7 @@ spectrum_draw (GtkWidget *widget, cairo_t *cr, gpointer user_data) {
             cairo_line_to(cr, bar->xpos, a.height-1);
         }
         else {
-            cairo_rectangle(cr, bar->xpos, a.height-bar->bar_height, w->draw_data.bar_width, bar->bar_height);
+            cairo_rectangle(cr, bar->xpos + SpectrumVisXOffset, a.height-bar->bar_height + SpectrumVisYOffset, w->draw_data.bar_width, bar->bar_height);
         }
     }
 
@@ -3043,7 +3069,7 @@ spectrum_draw (GtkWidget *widget, cairo_t *cr, gpointer user_data) {
     bar = w->draw_data.bars;
     cairo_set_source_rgb(cr, w->peak_color[0], w->peak_color[1], w->peak_color[2]);
     for (int i = 0; i < w->draw_data.bar_count; i++, bar++) {
-        cairo_rectangle(cr, bar->xpos, a.height-bar->peak_ypos-1, w->draw_data.bar_width, 1);
+        cairo_rectangle(cr, bar->xpos + SpectrumVisXOffset, a.height-bar->peak_ypos-1 + SpectrumVisYOffset, w->draw_data.bar_width, 1);
     }
     cairo_fill(cr);
 

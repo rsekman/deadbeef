@@ -50,6 +50,9 @@
 
 #include "../../deadbeef.h"
 #include "artwork_flac.h"
+#ifdef USE_OGG
+#include "artwork_ogg.h"
+#endif
 #include "albumartorg.h"
 #include "artwork.h"
 #include "artwork_internal.h"
@@ -904,6 +907,15 @@ process_query (ddb_cover_info_t *cover) {
             cover->cover_found = 1;
             return;
         }
+
+#ifdef USE_OGG
+        trace ("trying to load artwork from ogg tag for %s\n", cover->priv->filepath);
+        if (!ogg_extract_art (cover)) {
+            _consume_blob (cover, simplified_cache ? cover->priv->album_cache_path : cover->priv->track_cache_path);
+            cover->cover_found = 1;
+            return;
+        }
+#endif
     }
 
 #ifdef USE_VFS_CURL
@@ -1074,7 +1086,7 @@ _setup_tf_once() {
             album_tf = deadbeef->tf_compile ("%album%");
         }
         if (!artist_tf) {
-            artist_tf = deadbeef->tf_compile ("%artist%");
+            artist_tf = deadbeef->tf_compile ("$itematindex(0,%artist%)");
         }
         if (!title_tf) {
             title_tf = deadbeef->tf_compile ("%title%");

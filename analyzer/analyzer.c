@@ -150,6 +150,8 @@ ddb_analyzer_tick (ddb_analyzer_t *analyzer) {
                 }
             }
 
+            norm_h = norm_h;
+
             float bound = -analyzer->db_lower_bound;
             float height = (20*log10(norm_h) + bound)/bound;
 
@@ -187,8 +189,20 @@ ddb_analyzer_get_draw_data (ddb_analyzer_t *analyzer, int view_width, int view_h
         draw_data->bar_count = analyzer->bar_count;
     }
 
+    draw_data->mode = analyzer->mode;
+
     if (analyzer->mode == DDB_ANALYZER_MODE_FREQUENCIES) {
         draw_data->bar_width = 1;
+
+        if (analyzer->enable_bar_index_lookup_table) {
+            if (draw_data->bar_index_for_x_coordinate_table_size != view_width) {
+                free (draw_data->bar_index_for_x_coordinate_table);
+                draw_data->bar_index_for_x_coordinate_table = calloc (view_width
+                                                                      , sizeof (int));
+                draw_data->bar_index_for_x_coordinate_table_size = view_width;
+            }
+        }
+
     }
     else if (analyzer->mode == DDB_ANALYZER_MODE_OCTAVE_NOTE_BANDS) {
         if (analyzer->fractional_bars) {
@@ -210,14 +224,37 @@ ddb_analyzer_get_draw_data (ddb_analyzer_t *analyzer, int view_width, int view_h
         }
     }
 
+    if (draw_data->bar_index_for_x_coordinate_table != NULL) {
+        memset(draw_data->bar_index_for_x_coordinate_table, 0xff, sizeof (int) * view_width);
+    }
+
     ddb_analyzer_bar_t *bar = analyzer->bars;
     ddb_analyzer_draw_bar_t *draw_bar = draw_data->bars;
     for (int i = 0; i < analyzer->bar_count; i++, bar++, draw_bar++) {
         float height = bar->height;
 
+        float xpos = bar->xpos * view_width;
+
         draw_bar->bar_height = _get_bar_height (analyzer, height, view_height);
-        draw_bar->xpos = bar->xpos * view_width;
+        draw_bar->xpos = xpos;
         draw_bar->peak_ypos = _get_bar_height (analyzer, bar->peak, view_height);
+
+        if (analyzer->mode == DDB_ANALYZER_MODE_FREQUENCIES
+            && analyzer->enable_bar_index_lookup_table) {
+            int lookup_index = (int)draw_bar->xpos;
+            if (lookup_index < view_width
+                && draw_data->bar_index_for_x_coordinate_table[lookup_index] == -1) {
+                draw_data->bar_index_for_x_coordinate_table[lookup_index] = i;
+            }
+            if (lookup_index > 0
+                && draw_data->bar_index_for_x_coordinate_table[lookup_index-1] == -1) {
+                draw_data->bar_index_for_x_coordinate_table[lookup_index-1] = i;
+            }
+            if (lookup_index < view_width - 1
+                && draw_data->bar_index_for_x_coordinate_table[lookup_index+1] == -1) {
+                draw_data->bar_index_for_x_coordinate_table[lookup_index+1] = i;
+            }
+        }
     }
 
     memcpy (draw_data->label_freq_texts, analyzer->label_freq_texts, sizeof (analyzer->label_freq_texts));
@@ -230,6 +267,7 @@ ddb_analyzer_get_draw_data (ddb_analyzer_t *analyzer, int view_width, int view_h
 void
 ddb_analyzer_draw_data_dealloc (ddb_analyzer_draw_data_t *draw_data) {
     free (draw_data->bars);
+    free (draw_data->bar_index_for_x_coordinate_table);
     memset (draw_data, 0, sizeof(ddb_analyzer_draw_data_t));
 }
 
@@ -420,6 +458,16 @@ _tempered_scale_bands_precalc (ddb_analyzer_t *analyzer) {
 
 static float
 _interpolate_bin_with_ratio (float *fft_data, int bin, float ratio) {
-    return fft_data[bin] + (fft_data[bin + 1] - fft_data[bin]) * ratio;
+    float a = fft_data[bin];
+    float b = fft_data[bin + 1];
+    float result = a + (b - a) * ratio;
+
+    // Don't allow to go lower than 0,
+    // since log10(x<0) returns NaN,
+    // which may result in visual glitches
+    if (result < 0.f) {
+        return 0.f;
+    }
+    return result;
 }
 

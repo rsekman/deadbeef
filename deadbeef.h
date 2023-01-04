@@ -71,6 +71,7 @@ extern "C" {
 // that there's a better replacement in the newer deadbeef versions.
 
 // API version history:
+// 1.16 -- deadbeef-1.9.4
 // 1.15 -- deadbeef-1.9.0
 // 1.14 -- deadbeef-1.8.8
 // 1.12 -- deadbeef-1.8.4
@@ -1718,9 +1719,10 @@ enum {
     DB_ACTION_DISABLED = 1 << 4,
 
 #if (DDB_API_LEVEL >= 2)
-    // Ignored in callback2
-    // Action for the playlist (tab)
-    DB_ACTION_PLAYLIST DEPRECATED_15 = (1 << 5),
+    // Action is compatible with action context is DDB_ACTION_CTX_PLAYLIST,
+    // I.e. it should show up in the playlist tab context menu.
+    // Example "Duplicate playlist".
+    DB_ACTION_PLAYLIST = (1 << 5),
 #endif
 
 #if (DDB_API_LEVEL >= 5)
