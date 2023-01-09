@@ -3612,6 +3612,7 @@ junklib_id3v2_sync_frame (int version_major, uint8_t *data, int size) {
         *writeptr = *data;
         if (data[0] == 0xff && size >= 2 && data[1] == 0) {
             data++;
+            written++;
             if (version_major == 4) {
                 size--;
             }
@@ -4425,12 +4426,12 @@ junk_id3v2_read_full (playItem_t *it, DB_id3v2_tag_t *tag_store, DB_FILE *fp) {
 
             int synched_size = sz;
             if (unsync) {
-                synched_size = junklib_id3v2_sync_frame (version_major, readptr, sz);
+                sz = junklib_id3v2_sync_frame (version_major, readptr, sz);
                 trace ("size: %d/%d\n", synched_size, sz);
             }
 
             DB_id3v2_frame_t *frm = NULL;
-            frm = malloc (sizeof (DB_id3v2_frame_t) + sz);
+            frm = malloc (sizeof (DB_id3v2_frame_t) + synched_size);
             if (!frm) {
                 fprintf (stderr, "junklib: failed to alloc %d bytes for id3v2 frame %s\n", (int)(sizeof (DB_id3v2_frame_t) + sz), frameid);
                 goto error;
@@ -4445,7 +4446,7 @@ junk_id3v2_read_full (playItem_t *it, DB_id3v2_tag_t *tag_store, DB_FILE *fp) {
                 tag_store->frames = frm;
             }
             strcpy (frm->id, frameid);
-            memcpy (frm->data, readptr, sz);
+            memcpy (frm->data, readptr, synched_size);
             frm->size = synched_size;
 
             frm->flags[0] = flags1;
@@ -4564,10 +4565,10 @@ junk_id3v2_read_full (playItem_t *it, DB_id3v2_tag_t *tag_store, DB_FILE *fp) {
 
             int synched_size = sz;
             if (unsync) {
-                synched_size = junklib_id3v2_sync_frame (version_major, readptr, sz);
+                sz = junklib_id3v2_sync_frame (version_major, readptr, sz);
             }
 
-            DB_id3v2_frame_t *frm = malloc (sizeof (DB_id3v2_frame_t) + sz);
+            DB_id3v2_frame_t *frm = malloc (sizeof (DB_id3v2_frame_t) + synched_size);
             if (!frm) {
                 fprintf (stderr, "junklib: failed to alloc %d bytes for id3v2.2 frame %s\n", (int)(sizeof (DB_id3v2_frame_t) + sz), frameid);
                 goto error;
