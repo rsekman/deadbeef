@@ -28,10 +28,10 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../../analyzer/analyzer.h"
-#include "../../fastftoi.h"
-#include "../../scope/scope.h"
-#include "../../strdupa.h"
+#include <deadbeef/fastftoi.h>
+#include <deadbeef/strdupa.h>
+#include "../../shared/analyzer/analyzer.h"
+#include "../../shared/scope/scope.h"
 #include "../libparser/parser.h"
 #include "actions.h"
 #include "callbacks.h"
@@ -2915,7 +2915,7 @@ spectrum_audio_listener (void *ctx, const ddb_audio_data_t *data) {
 
     deadbeef->mutex_lock (w->mutex);
     // copy the input data for later consumption
-    if (w->input_data.nframes != data->nframes) {
+    if (w->input_data.nframes != data->nframes || w->input_data.fmt->channels != data->fmt->channels) {
         free (w->input_data.data);
         w->input_data.data = malloc (data->nframes * data->fmt->channels * sizeof (float));
         w->input_data.nframes = data->nframes;
@@ -3049,8 +3049,8 @@ spectrum_draw (GtkWidget *widget, cairo_t *cr, gpointer user_data) {
     cairo_set_source_rgb(cr, w->bar_color[0], w->bar_color[1], w->bar_color[2]);
     for (int i = 0; i < w->draw_data.bar_count; i++, bar++) {
         if (w->analyzer.mode == DDB_ANALYZER_MODE_FREQUENCIES) {
-            cairo_move_to(cr, bar->xpos, a.height-bar->bar_height);
-            cairo_line_to(cr, bar->xpos, a.height-1);
+            cairo_move_to(cr, bar->xpos + SpectrumVisXOffset, a.height - bar->bar_height + SpectrumVisYOffset);
+            cairo_line_to(cr, bar->xpos + SpectrumVisXOffset, a.height - 1);
         }
         else {
             cairo_rectangle(cr, bar->xpos + SpectrumVisXOffset, a.height-bar->bar_height + SpectrumVisYOffset, w->draw_data.bar_width, bar->bar_height);

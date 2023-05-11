@@ -48,7 +48,7 @@
 #endif
 #include <unistd.h>
 
-#include "../../deadbeef.h"
+#include <deadbeef/deadbeef.h>
 #include "artwork_flac.h"
 #ifdef USE_OGG
 #include "artwork_ogg.h"
@@ -61,7 +61,7 @@
 #include "lastfm.h"
 #include "musicbrainz.h"
 #include "mp4tagutil.h"
-#include "../../strdupa.h"
+#include <deadbeef/strdupa.h>
 #include "wos.h"
 
 //#define DEBUG_COUNTER 1
@@ -1080,7 +1080,7 @@ cover_cache_remove (ddb_cover_info_t *cover) {
 #pragma mark - Utility
 
 static void
-_setup_tf_once() {
+_setup_tf_once(void) {
     dispatch_sync(sync_queue, ^{
         if (!album_tf) {
             album_tf = deadbeef->tf_compile ("%album%");

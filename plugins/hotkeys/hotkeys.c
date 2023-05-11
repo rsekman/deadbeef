@@ -38,7 +38,7 @@
 
 #include "../libparser/parser.h"
 #include "hotkeys.h"
-#include "../../deadbeef.h"
+#include <deadbeef/deadbeef.h>
 #include "actionhandlers.h"
 
 //#define trace(...) { fprintf(stderr, __VA_ARGS__); }
@@ -406,7 +406,7 @@ hotkeys_load (DB_functions_t *api) {
 }
 
 static void
-cleanup () {
+cleanup (void) {
     command_count = 0;
 #ifndef NO_XLIB_H
     if (disp) {

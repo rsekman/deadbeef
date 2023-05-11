@@ -41,9 +41,9 @@
 #include <FLAC/stream_decoder.h>
 #include <FLAC/metadata.h>
 #include <limits.h>
-#include "../../deadbeef.h"
+#include <deadbeef/deadbeef.h>
 #include "../liboggedit/oggedit.h"
-#include "../../strdupa.h"
+#include <deadbeef/strdupa.h>
 
 static ddb_decoder2_t plugin;
 static DB_functions_t *deadbeef;
@@ -924,7 +924,7 @@ cflac_insert (ddb_playlist_t *plt, DB_playItem_t *after, const char *fname) {
     deadbeef->pl_add_meta (it, ":FILETYPE", isogg ? "OggFLAC" : "FLAC");
 
     char s[100];
-    snprintf (s, sizeof (s), "%lld", fsize);
+    snprintf (s, sizeof (s), "%lld", (long long)fsize);
     deadbeef->pl_add_meta (it, ":FILE_SIZE", s);
     snprintf (s, sizeof (s), "%d", info.info.fmt.channels);
     deadbeef->pl_add_meta (it, ":CHANNELS", s);

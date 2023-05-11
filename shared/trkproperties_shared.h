@@ -25,7 +25,7 @@
 #ifndef ____trkproperties_shared__
 #define ____trkproperties_shared__
 
-#include "../deadbeef.h"
+#include <deadbeef/deadbeef.h>
 
 extern const char *trkproperties_types[];
 extern const char *trkproperties_hc_props[];

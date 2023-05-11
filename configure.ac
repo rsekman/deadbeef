@@ -17,6 +17,7 @@ dnl AC_PROG_LIBTOOL
 AC_CONFIG_MACRO_DIR([m4])
 AC_C_BIGENDIAN
 AM_GNU_GETTEXT
+AM_GNU_GETTEXT_VERSION([0.18])
 PKG_PROG_PKG_CONFIG
 AM_PROG_CC_C_O
 AM_ICONV
@@ -918,12 +919,13 @@ AC_SUBST(PLUGINS_DIRS)
 
 AC_CONFIG_FILES([
 Makefile
+src/Makefile
+shared/Makefile
+shared/analyzer/Makefile
+shared/scope/Makefile
 external/Makefile
 external/ddb_dsp_libretro/Makefile
 external/ddb_output_pw/Makefile
-shared/Makefile
-analyzer/Makefile
-scope/Makefile
 pixmaps/Makefile
 icons/Makefile
 plugins/liboggedit/Makefile

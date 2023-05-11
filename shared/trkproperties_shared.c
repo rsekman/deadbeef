@@ -25,8 +25,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include "trkproperties_shared.h"
-#include "../deadbeef.h"
-#include "../utf8.h"
+#include <deadbeef/deadbeef.h>
+#include "../src/utf8.h"
 
 extern DB_functions_t *deadbeef;
 

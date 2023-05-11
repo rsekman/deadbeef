@@ -24,7 +24,7 @@
     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
     OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "../../deadbeef.h"
+#include <deadbeef/deadbeef.h>
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
@@ -34,7 +34,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include "../../strdupa.h"
+#include <deadbeef/strdupa.h>
 
 #include "decomp.h"
 
@@ -412,7 +412,7 @@ alacplug_insert (ddb_playlist_t *plt, DB_playItem_t *after, const char *fname) {
     deadbeef->fclose (fp);
 
     char s[100];
-    snprintf (s, sizeof (s), "%lld", fsize);
+    snprintf (s, sizeof (s), "%lld", (long long)fsize);
     deadbeef->pl_add_meta (it, ":FILE_SIZE", s);
     deadbeef->pl_add_meta (it, ":BPS", "16");
     snprintf (s, sizeof (s), "%d", channels);

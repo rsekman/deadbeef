@@ -9,7 +9,7 @@
 #ifndef deletefromdisk_h
 #define deletefromdisk_h
 
-#include "../deadbeef.h"
+#include <deadbeef/deadbeef.h>
 
 #pragma mark - UtilTrackList
 

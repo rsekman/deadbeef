@@ -30,7 +30,7 @@
 #include <unistd.h>
 #include <math.h>
 #include <stdbool.h>
-#include "../../deadbeef.h"
+#include <deadbeef/deadbeef.h>
 #include "../liboggedit/oggedit.h"
 #if TREMOR
     #include <tremor/ivorbisfile.h>
@@ -38,7 +38,7 @@
 #else
     #include <vorbis/vorbisfile.h>
 #endif
-#include "../../strdupa.h"
+#include <deadbeef/strdupa.h>
 
 #define min(x,y) ((x)<(y)?(x):(y))
 #define max(x,y) ((x)>(y)?(x):(y))
@@ -170,7 +170,7 @@ static void
 set_meta_ll(DB_playItem_t *it, const char *key, const int64_t value)
 {
     char string[11];
-    snprintf(string, sizeof(string), "%lld", value);
+    snprintf(string, sizeof(string), "%lld", (long long)value);
     deadbeef->pl_replace_meta(it, key, string);
 }
 

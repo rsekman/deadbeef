@@ -50,10 +50,10 @@ filter "configurations:release"
 
 filter "configurations:debug or release"
   includedirs {
-    "plugins/libmp4ff",
+    "include",
+    ".",
     "static-deps/lib-x86-64/include/x86_64-linux-gnu",
     "static-deps/lib-x86-64/include",
-    "external/mp4p/include"
   }
   libdirs {
     "static-deps/lib-x86-64/lib/x86_64-linux-gnu",
@@ -191,8 +191,8 @@ project "deadbeef"
   kind (ddb_type)
   targetdir "bin/%{cfg.buildcfg}"
   files {
-    "*.c",
-    "md5/*.c",
+    "src/md5/*.c",
+    "src/*.c",
     "plugins/libparser/*.c",
     "external/wcwidth/wcwidth.c",
     "shared/ctmap.c",
@@ -260,6 +260,7 @@ project "aac_plugin"
     "plugins/aac/aac_parser.c",
     "shared/mp4tagutil.c"
   }
+  includedirs { "external/mp4p/include" }
   links { "faad", "mp4p" }
 end
 
@@ -277,6 +278,11 @@ project "adplug_plugin"
   defines {"stricmp=strcasecmp"}
   includedirs {"plugins/adplug/adplug", "plugins/adplug/libbinio"}
   links {"stdc++"}
+
+  filter "files:**.cpp"
+    buildoptions {
+        "-std=c++11"
+    }
 end
 
 if option ("plugin-alac") then
@@ -287,6 +293,7 @@ project "alac_plugin"
     "plugins/alac/alac.c",
     "shared/mp4tagutil.c"
   }
+  includedirs { "external/mp4p/include" }
   links {"faad", "mp4p"}
 end
 
@@ -814,10 +821,10 @@ project "ddb_gui_GTK2"
     "shared/eqpreset.c",
     "shared/pluginsettings.c",
     "shared/trkproperties_shared.c",
-    "analyzer/analyzer.c",
-    "scope/scope.c",
+    "shared/analyzer/analyzer.c",
+    "shared/scope/scope.c",
     "plugins/libparser/parser.c",
-    "utf8.c"
+    "src/utf8.c"
   }
   excludes {
     "plugins/gtkui/deadbeefapp.c",
@@ -844,10 +851,10 @@ project "ddb_gui_GTK3"
     "shared/eqpreset.c",
     "shared/pluginsettings.c",
     "shared/trkproperties_shared.c",
-    "analyzer/analyzer.c",
-    "scope/scope.c",
+    "shared/analyzer/analyzer.c",
+    "shared/scope/scope.c",
     "plugins/libparser/parser.c",
-    "utf8.c"
+    "src/utf8.c"
   }
   includedirs {
     "plugins/gtkui",
@@ -1116,7 +1123,7 @@ project "artwork_plugin"
     "plugins/artwork/*.c",
     "shared/mp4tagutil.c"
   }
-  includedirs {"../libmp4ff", "./shared"}
+  includedirs {"external/mp4p/include", "shared"}
   buildoptions {"-fblocks"}
   defines {"USE_OGG=1", "USE_VFS_CURL", "USE_METAFLAC", "USE_MP4FF", "USE_TAGGING=1"}
   pkgconfig ("flac ogg vorbisfile")
@@ -1201,7 +1208,7 @@ project "translations"
 
 project "resources"
   kind "Utility"
-  files {"main.c"}
+  files {"src/main.c"}
   filter 'files:**.c'
     buildcommands {
       "mkdir -p bin/%{cfg.buildcfg}/pixmaps",
@@ -1216,7 +1223,7 @@ project "resources_windows"
   kind "Utility"
   removeplatforms {"Linux"}
   dependson {"translations", "ddb_gui_GTK3", "ddb_gui_GTK2"}
-  files {"main.c"}
+  files {"src/main.c"}
   filter 'files:**.c'
     buildcommands {"./scripts/windows_postbuild.sh bin/%{cfg.buildcfg}"}
     buildoutputs {'%{cfg.objdir}/%{file.basename}.c_fake'}

@@ -25,10 +25,10 @@
 #include <string.h>
 #include <limits.h>
 #include <opusfile.h>
-#include "../../deadbeef.h"
+#include <deadbeef/deadbeef.h>
 #include <stdbool.h>
 #include "../liboggedit/oggedit.h"
-#include "../../strdupa.h"
+#include <deadbeef/strdupa.h>
 
 #define trace(...) { deadbeef->log_detailed (&plugin.decoder.plugin, 0, __VA_ARGS__); }
 
@@ -226,7 +226,7 @@ static void
 set_meta_ll(DB_playItem_t *it, const char *key, const int64_t value)
 {
     char string[11];
-    sprintf(string, "%lld", value);
+    sprintf(string, "%lld", (long long)value);
     deadbeef->pl_replace_meta(it, key, string);
 }
 

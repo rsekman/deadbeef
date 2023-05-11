@@ -34,8 +34,8 @@
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
 #endif
-#include "../../deadbeef.h"
-#include "../../strdupa.h"
+#include <deadbeef/deadbeef.h>
+#include <deadbeef/strdupa.h>
 
 #define min(x,y) ((x)<(y)?(x):(y))
 #define max(x,y) ((x)>(y)?(x):(y))
@@ -221,7 +221,7 @@ tta_insert (ddb_playlist_t *plt, DB_playItem_t *after, const char *fname) {
     }
 
     char s[100];
-    snprintf (s, sizeof (s), "%lld", fsize);
+    snprintf (s, sizeof (s), "%lld", (long long)fsize);
     deadbeef->pl_add_meta (it, ":FILE_SIZE", s);
     snprintf (s, sizeof (s), "%d", tta.BPS);
     deadbeef->pl_add_meta (it, ":BPS", s);

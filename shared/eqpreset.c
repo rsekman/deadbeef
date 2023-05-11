@@ -24,7 +24,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "eqpreset.h"
-#include "../deadbeef.h"
+#include <deadbeef/deadbeef.h>
 
 extern DB_functions_t *deadbeef;
 

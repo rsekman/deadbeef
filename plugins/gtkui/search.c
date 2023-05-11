@@ -31,7 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../../deadbeef.h"
+#include <deadbeef/deadbeef.h>
 #include "../../gettext.h"
 
 #include "callbacks.h"
@@ -59,7 +59,7 @@ static int refresh_source_id = 0;
 static char *window_title_bytecode = NULL;
 
 static DdbListview *
-playlist_visible () {
+playlist_visible (void) {
     if (searchwin) {
         GdkWindow *window = gtk_widget_get_window(searchwin);
         if (window) {

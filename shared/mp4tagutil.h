@@ -24,7 +24,7 @@
 #ifndef mp4tagutil_h
 #define mp4tagutil_h
 
-#include "../deadbeef.h"
+#include <deadbeef/deadbeef.h>
 #include <mp4p/mp4p.h>
 
 int

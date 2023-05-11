@@ -28,8 +28,8 @@
 #include <limits.h>
 #include <unistd.h>
 #include <sys/time.h>
-#include "../../deadbeef.h"
-#include "../../strdupa.h"
+#include <deadbeef/deadbeef.h>
+#include <deadbeef/strdupa.h>
 #include "mp3.h"
 #ifdef USE_LIBMAD
 #include "mp3_mad.h"
@@ -116,7 +116,7 @@ cmp3_set_extra_properties (DB_playItem_t *it, mp3info_t *mp3info, int fake) {
     char s[100];
     int64_t size = mp3info->fsize;
     if (size >= 0) {
-        snprintf (s, sizeof (s), "%lld", size);
+        snprintf (s, sizeof (s), "%lld", (long long)size);
         deadbeef->pl_replace_meta (it, ":FILE_SIZE", s);
     }
     else {
