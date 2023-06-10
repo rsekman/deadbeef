@@ -83,6 +83,7 @@ static int autoconv_8_to_16 = 1;
 
 static int autoconv_16_to_24 = 0;
 
+static int bit_override = 0;
 
 static int conf_streamer_override_samplerate = 0;
 static int conf_streamer_use_dependent_samplerate = 0;
@@ -1632,6 +1633,26 @@ get_desired_output_format (ddb_waveformat_t *in_fmt, ddb_waveformat_t *out_fmt) 
             out_fmt->bps = 24;
         }
     }
+    if (bit_override == 1) {
+        out_fmt->bps = 8;
+        out_fmt->is_float = 0;
+    }
+    else if (bit_override == 2) {
+        out_fmt->bps = 16;
+        out_fmt->is_float = 0;
+    }
+    else if (bit_override == 3) {
+        out_fmt->bps = 24;
+        out_fmt->is_float = 0;
+    }
+    else if (bit_override == 4) {
+        out_fmt->bps = 32;
+        out_fmt->is_float = 0;
+    }
+    else if (bit_override == 5) {
+        out_fmt->bps = 32;
+        out_fmt->is_float = 1;
+    }
 
 #if !defined(ANDROID) && !defined(HAVE_XGUI)
     // samplerate override
@@ -2066,7 +2087,6 @@ process_output_block (streamblock_t *block, char *bytes, int bytes_available_siz
             .samplerate = block->fmt.samplerate,
             .channelmask = block->fmt.channelmask,
             .is_float = 0,
-            .is_bigendian = 0
         };
 
         pcm_convert (&block->fmt, (char *)input, &out_fmt, (char *)temp_audio_data, sz);
@@ -2151,6 +2171,10 @@ streamer_apply_soft_volume (char *bytes, int sz) {
     }
     DB_output_t *output = plug_get_output ();
     if (output->has_volume) {
+        return;
+    }
+
+    if (output->fmt.flags & DDB_WAVEFORMAT_FLAG_IS_DOP) {
         return;
     }
 
@@ -2474,6 +2498,11 @@ streamer_configchanged (void) {
     int conf_autoconv_16_to_24 = conf_get_int ("streamer.16_to_24",0);
     if (conf_autoconv_16_to_24 != autoconv_16_to_24) {
         autoconv_16_to_24 = conf_autoconv_16_to_24;
+        formatchanged = 1;
+    }
+    int conf_bit_override = conf_get_int ("streamer.bit_override",0);
+    if (conf_bit_override != bit_override) {
+        bit_override = conf_bit_override;
         formatchanged = 1;
     }
 
