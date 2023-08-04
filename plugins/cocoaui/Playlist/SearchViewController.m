@@ -50,10 +50,6 @@ extern DB_functions_t *deadbeef;
     return PL_SEARCH;
 }
 
-- (void)awakeFromNib {
-    [super awakeFromNib];
-}
-
 - (const char *)groupByConfStr {
     return "cocoaui.search.group_by";
 }
@@ -63,11 +59,11 @@ extern DB_functions_t *deadbeef;
 }
 
 - (void)controlTextDidChange:(NSNotification *)notification {
-    NSTextField *textField = [notification object];
-    NSString *val = [textField stringValue];
+    NSTextField *textField = notification.object;
+    NSString *val = textField.stringValue;
     ddb_playlist_t *plt = deadbeef->plt_get_curr ();
     if (plt) {
-        deadbeef->plt_search_process (plt, [val UTF8String]);
+        deadbeef->plt_search_process (plt, val.UTF8String);
         deadbeef->sendmessage (DB_EV_PLAYLISTCHANGED, 0, DDB_PLAYLIST_CHANGE_SELECTION, 0);
         deadbeef->sendmessage (DB_EV_PLAYLISTCHANGED, 0, DDB_PLAYLIST_CHANGE_SEARCHRESULT, 0);
         deadbeef->plt_unref (plt);

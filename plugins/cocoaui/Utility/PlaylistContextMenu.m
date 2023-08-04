@@ -86,7 +86,7 @@ extern DB_functions_t *deadbeef;
 
     char buffer[1000];
     deadbeef->plt_get_title (self.playlist, buffer, sizeof (buffer));
-    NSString *title = [NSString stringWithUTF8String:buffer];
+    NSString *title = @(buffer);
 
     controller.title = title;
     controller.delegate = self.deletePlaylistDelegate;
@@ -102,11 +102,11 @@ extern DB_functions_t *deadbeef;
     self.renamePlaylistPopover = [NSPopover new];
     self.renamePlaylistPopover.behavior = NSPopoverBehaviorTransient;
 
-    RenamePlaylistViewController *viewController = [[RenamePlaylistViewController alloc] initWithNibName:@"RenamePlaylistViewController" bundle:nil];
+    RenamePlaylistViewController *viewController = [RenamePlaylistViewController new];
     int l = deadbeef->plt_get_title (self.playlist, NULL, 0);
     char buf[l+1];
     deadbeef->plt_get_title (self.playlist, buf, (int)sizeof buf);
-    viewController.name = [NSString stringWithUTF8String:buf];
+    viewController.name = @(buf);
 
     viewController.popover = self.renamePlaylistPopover;
     viewController.delegate = self.renamePlaylistDelegate;

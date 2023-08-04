@@ -1,6 +1,6 @@
 /*
     DeaDBeeF -- the music player
-    Copyright (C) 2009-2016 Oleksiy Yakovenko and other contributors
+    Copyright (C) 2009-2023 Oleksiy Yakovenko and other contributors
 
     This software is provided 'as-is', without any express or implied
     warranty.  In no event will the authors be held liable for any damages
@@ -21,35 +21,15 @@
     3. This notice may not be removed or altered from any source distribution.
 */
 
-#import <Cocoa/Cocoa.h>
-#import "PlaylistView.h"
-#import "ConverterWindowController.h"
 
-typedef NS_ENUM(NSInteger, PlaylistColumnAlignment) {
-    ColumnAlignmentLeft = 0,
-    ColumnAlignmentCenter = 1,
-    ColumnAlignmentRight = 2,
-};
 
-typedef struct {
-    char *title;
-    int type; // predefined col type
-    char *format;
-    char *sortFormat;
-    int size;
-    PlaylistColumnAlignment alignment;
-    int set_text_color;
-    uint8_t text_color[4];
-    char *bytecode;
-    int sort_order;
-} plt_col_info_t;
+#import <Foundation/Foundation.h>
 
-@interface PlaylistViewController : NSViewController
+@interface TrackPropertiesManager : NSObject
 
-@property (nonatomic,readonly) plt_col_info_t *columns;
-@property (nonatomic,readonly) int ncolumns;
+@property (class,nonatomic,readonly) TrackPropertiesManager *shared;
++ (void)deinitializeSharedInstance;
 
-- (void)cleanup;
-- (int)sendMessage:(uint32_t)_id ctx:(uintptr_t)ctx p1:(uint32_t)p1 p2:(uint32_t)p2;
+- (void)displayTrackProperties;
 
 @end

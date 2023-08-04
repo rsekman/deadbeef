@@ -99,6 +99,7 @@ static void vis_callback (void *ctx, const ddb_audio_data_t *data) {
     ]];
 
     self.view = self.labelsView;
+    [super loadView];
 }
 
 - (void)updateVisListening {
@@ -143,6 +144,7 @@ static void vis_callback (void *ctx, const ddb_audio_data_t *data) {
 }
 
 - (void)viewDidLoad {
+    [super viewDidLoad];
     NSMenu *menu = [NSMenu new];
     NSMenuItem *modeMenuItem = [menu addItemWithTitle:@"Mode" action:nil keyEquivalent:@""];
     NSMenuItem *gapSizeMenuItem = [menu addItemWithTitle:@"Gap Size" action:nil keyEquivalent:@""];
@@ -281,7 +283,7 @@ static void vis_callback (void *ctx, const ddb_audio_data_t *data) {
     self.preferencesPopover = [NSPopover new];
     self.preferencesPopover.behavior = NSPopoverBehaviorTransient;
 
-    SpectrumAnalyzerPreferencesViewController *preferencesViewController = [[SpectrumAnalyzerPreferencesViewController alloc] initWithNibName:@"SpectrumAnalyzerPreferencesViewController" bundle:nil];
+    SpectrumAnalyzerPreferencesViewController *preferencesViewController = [SpectrumAnalyzerPreferencesViewController new];
     preferencesViewController.settings = self.settings;
     preferencesViewController.popover = self.preferencesPopover;
 
@@ -343,6 +345,7 @@ static void vis_callback (void *ctx, const ddb_audio_data_t *data) {
             self.labelsView.needsDisplay = YES;
         });
     }
+    [super message:_id ctx:ctx p1:p1 p2:p2];
 }
 
 - (NSColor *)backgroundColor {
@@ -397,6 +400,10 @@ static inline vector_float4 vec4color (NSColor *color) {
 #pragma mark - AAPLViewDelegate
 
 - (void)drawableResize:(CGSize)size {
+    CGFloat scale = self.view.window.backingScaleFactor;
+    @synchronized (self) {
+        ddb_analyzer_get_draw_data(&_analyzer, self.visualizationView.bounds.size.width * scale, self.visualizationView.bounds.size.height * scale, &_draw_data);
+    }
     [_renderer drawableResize:size];
 }
 

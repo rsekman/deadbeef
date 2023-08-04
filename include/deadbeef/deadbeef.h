@@ -518,12 +518,19 @@ enum {
 
 #if (DDB_API_LEVEL >= 8)
     // A caller sends this event, to ask playlist viewer(s) to focus on selected track.
-    DB_EV_FOCUS_SELECTION = 24, 
+    DB_EV_FOCUS_SELECTION = 24,
 #endif
 
-    DB_EV_PLAY_NEXT_ALBUM = 25, // switch to next album
-    DB_EV_PLAY_PREV_ALBUM = 26, // switch to prev album
-    DB_EV_PLAY_RANDOM_ALBUM = 27, // play random album
+#if (DDB_API_LEVEL >= 17)
+    // Notify about playback state change,
+    // which includes a switch to another output plugin.
+    // p1 contains the new state.
+    DB_EV_PLAYBACK_STATE_DID_CHANGE = 25,
+    DB_EV_PLAY_NEXT_ALBUM = 26, // switch to next album
+    DB_EV_PLAY_PREV_ALBUM = 27, // switch to prev album
+    DB_EV_PLAY_RANDOM_ALBUM = 28, // play random album
+#endif
+
     // -----------------
     // structured events
 
@@ -941,7 +948,7 @@ typedef struct {
     // It doesn't need to be called if you save the playlist via direct call to `plt_save_*`, or `pl_save_current`
     void (*plt_modified) (ddb_playlist_t *handle);
 
-    // returns modication index
+    // returns modification index
     // the index is incremented by 1 every time playlist changes
     int (*plt_get_modification_idx) (ddb_playlist_t *handle);
 
@@ -2339,7 +2346,7 @@ typedef struct {
     const char *(*selector_name) (ddb_mediasource_source_t source, ddb_mediasource_list_selector_t selector);
 
     /// Add event listener. Your callback function will be called every time some event occurs. Such as state change, content update, and so on.
-    /// The callback funtion may be executed on background thread, so make sure to dispatch to main to update UI.
+    /// The callback function may be executed on background thread, so make sure to dispatch to main to update UI.
     int (*add_listener) (ddb_mediasource_source_t source, ddb_medialib_listener_t listener, void *user_data);
 
     /// Remove event listener

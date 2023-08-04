@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 52;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -657,8 +657,6 @@
 		2D00FC5F2435381F000FC130 /* event.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2D00FBC32435381E000FC130 /* event.cpp */; };
 		2D00FC602435381F000FC130 /* reloc65.c in Sources */ = {isa = PBXBuildFile; fileRef = 2D00FBC42435381E000FC130 /* reloc65.c */; };
 		2D00FE93243539AA000FC130 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 2D8C8D3F1C43116A008ACE29 /* libz.tbd */; };
-		2D00FE94243539CB000FC130 /* libzip.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2D00FE7F2435392E000FC130 /* libzip.framework */; };
-		2D00FE95243539CB000FC130 /* libzip.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 2D00FE7F2435392E000FC130 /* libzip.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		2D01D7CF1AB2219C00BCD3C4 /* ConvertUTF.c in Sources */ = {isa = PBXBuildFile; fileRef = 4D1B3ED81837EC44003E6066 /* ConvertUTF.c */; };
 		2D01D7D01AB2219C00BCD3C4 /* md5.c in Sources */ = {isa = PBXBuildFile; fileRef = 4D1B3F871837EC44003E6066 /* md5.c */; };
 		2D01D7D11AB2219C00BCD3C4 /* playqueue.c in Sources */ = {isa = PBXBuildFile; fileRef = 2D713FFB1A5D7D5900EFF139 /* playqueue.c */; };
@@ -1296,8 +1294,8 @@
 		2D651D07227227A000375AE2 /* ScriptableNodeEditorWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = 2D651D06227227A000375AE2 /* ScriptableNodeEditorWindow.xib */; };
 		2D651D17227227C300375AE2 /* ScriptableNodeEditorWindowController.h in Headers */ = {isa = PBXBuildFile; fileRef = 2D651D15227227C300375AE2 /* ScriptableNodeEditorWindowController.h */; };
 		2D651D18227227C300375AE2 /* ScriptableNodeEditorWindowController.m in Sources */ = {isa = PBXBuildFile; fileRef = 2D651D16227227C300375AE2 /* ScriptableNodeEditorWindowController.m */; };
-		2D651D1A227227FA00375AE2 /* ScriptableNodeEditorView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 2D651D19227227FA00375AE2 /* ScriptableNodeEditorView.xib */; };
-		2D651D1C22722AD200375AE2 /* ScriptableSelectView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 2D651D1B22722AD200375AE2 /* ScriptableSelectView.xib */; };
+		2D651D1A227227FA00375AE2 /* ScriptableNodeEditorViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 2D651D19227227FA00375AE2 /* ScriptableNodeEditorViewController.xib */; };
+		2D651D1C22722AD200375AE2 /* ScriptableSelectViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 2D651D1B22722AD200375AE2 /* ScriptableSelectViewController.xib */; };
 		2D6530D81CE79ED400163808 /* adplug-db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2D6530551CE79ED400163808 /* adplug-db.cpp */; };
 		2D6530D91CE79ED400163808 /* binfile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2D6530581CE79ED400163808 /* binfile.cpp */; };
 		2D6530DA1CE79ED400163808 /* binfile.h in Headers */ = {isa = PBXBuildFile; fileRef = 2D6530591CE79ED400163808 /* binfile.h */; };
@@ -2415,6 +2413,9 @@
 		2DCB197C2515F9DF0054BD06 /* ChangeLog in CopyFiles */ = {isa = PBXBuildFile; fileRef = 2DCB197B2515F9D90054BD06 /* ChangeLog */; };
 		2DCB281A19E86183008E9DF6 /* m3u.c in Sources */ = {isa = PBXBuildFile; fileRef = 2DCB281919E86183008E9DF6 /* m3u.c */; };
 		2DCB281D19E86194008E9DF6 /* m3u.dylib in Copy Plugins */ = {isa = PBXBuildFile; fileRef = 2DCB281419E86162008E9DF6 /* m3u.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		2DCB5F392A71923200F20ABC /* libzip.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2D00FE7F2435392E000FC130 /* libzip.framework */; };
+		2DCB5F3E2A71928600F20ABC /* libzip.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2D00FE7F2435392E000FC130 /* libzip.framework */; };
+		2DCB5F3F2A71928600F20ABC /* libzip.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 2D00FE7F2435392E000FC130 /* libzip.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		2DCCCF7E26C43D080034F4BB /* medialibwidget.h in Headers */ = {isa = PBXBuildFile; fileRef = 2DCCCF7C26C43D080034F4BB /* medialibwidget.h */; };
 		2DCF64811D54A2A4002282D3 /* cocoautil.m in Sources */ = {isa = PBXBuildFile; fileRef = 2DD9EF0519A5089F00189344 /* cocoautil.m */; };
 		2DCF73B41A952F8900495740 /* PreferencesWindowController.h in Headers */ = {isa = PBXBuildFile; fileRef = 2DCF73B21A952F8900495740 /* PreferencesWindowController.h */; };
@@ -2425,7 +2426,7 @@
 		2DD376FF2739B865007AD315 /* libavcodec.58.dylib in Copy Plugins */ = {isa = PBXBuildFile; fileRef = 2DD376FC2739B854007AD315 /* libavcodec.58.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		2DD377002739B867007AD315 /* libavformat.58.dylib in Copy Plugins */ = {isa = PBXBuildFile; fileRef = 2DD376FE2739B854007AD315 /* libavformat.58.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		2DD377012739B869007AD315 /* libavutil.56.dylib in Copy Plugins */ = {isa = PBXBuildFile; fileRef = 2DD376FD2739B854007AD315 /* libavutil.56.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		2DD377432740420C007AD315 /* AppearancePreferences.xib in Resources */ = {isa = PBXBuildFile; fileRef = 2DD377422740420C007AD315 /* AppearancePreferences.xib */; };
+		2DD377432740420C007AD315 /* AppearancePreferencesViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 2DD377422740420C007AD315 /* AppearancePreferencesViewController.xib */; };
 		2DD3774627404401007AD315 /* AppearancePreferencesViewController.h in Headers */ = {isa = PBXBuildFile; fileRef = 2DD3774427404401007AD315 /* AppearancePreferencesViewController.h */; };
 		2DD3774727404401007AD315 /* AppearancePreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 2DD3774527404401007AD315 /* AppearancePreferencesViewController.m */; };
 		2DD3774A27404E11007AD315 /* VisualizationSettingsUtil.h in Headers */ = {isa = PBXBuildFile; fileRef = 2DD3774827404E11007AD315 /* VisualizationSettingsUtil.h */; };
@@ -2454,6 +2455,8 @@
 		2DD81CFC25152DC3008C716C /* noartwork.png in CopyFiles */ = {isa = PBXBuildFile; fileRef = 2DD81C3125152D86008C716C /* noartwork.png */; };
 		2DD81CFD25152DC5008C716C /* buffering_16.png in CopyFiles */ = {isa = PBXBuildFile; fileRef = 2DD81C3325152D86008C716C /* buffering_16.png */; };
 		2DD877A31C370C7100CC94FB /* ferror68.c in Sources */ = {isa = PBXBuildFile; fileRef = 2DD877A21C370C7100CC94FB /* ferror68.c */; };
+		2DD9F4E92A7A65FD00BC76DC /* TrackPropertiesManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 2DD9F4E72A7A65FD00BC76DC /* TrackPropertiesManager.h */; };
+		2DD9F4EA2A7A65FD00BC76DC /* TrackPropertiesManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 2DD9F4E82A7A65FD00BC76DC /* TrackPropertiesManager.m */; };
 		2DDBA24D23E5E66D00051320 /* PlaylistContentView.h in Headers */ = {isa = PBXBuildFile; fileRef = 2DDBA24B23E5E66D00051320 /* PlaylistContentView.h */; };
 		2DDBA24E23E5E66D00051320 /* PlaylistContentView.m in Sources */ = {isa = PBXBuildFile; fileRef = 2DDBA24C23E5E66D00051320 /* PlaylistContentView.m */; };
 		2DDBA26023E5EA3800051320 /* PlaylistLocalDragDropHolder.h in Headers */ = {isa = PBXBuildFile; fileRef = 2DDBA25E23E5EA3800051320 /* PlaylistLocalDragDropHolder.h */; };
@@ -4026,6 +4029,13 @@
 			remoteGlobalIDString = 2DCB281319E86162008E9DF6;
 			remoteInfo = m3u;
 		};
+		2DCB5F3C2A71923C00F20ABC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2D4459D21C04F28800230939 /* libzip.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 4B01D68A15B2F3F1002D5007;
+			remoteInfo = libzip;
+		};
 		2DDF87E824027FC600CA8E91 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 4D1B3E7218379829003E6066 /* Project object */;
@@ -4218,17 +4228,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		2D00FE96243539CB000FC130 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				2D00FE95243539CB000FC130 /* libzip.framework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		2D7C1F7C2945EBB400163538 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -4245,6 +4244,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				2DCB5F3F2A71928600F20ABC /* libzip.framework in Copy Frameworks */,
 				2D71F1B624AE7A1A00E753D3 /* mp4p.framework in Copy Frameworks */,
 			);
 			name = "Copy Frameworks";
@@ -4356,6 +4356,16 @@
 				2DCB18782515F96A0054BD06 /* help.txt in CopyFiles */,
 				2DCB18FA2515F9B30054BD06 /* COPYING.GPLv2 in CopyFiles */,
 			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2DCB5F3B2A71923300F20ABC /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		2DD6C5CD279B277E00CABBE6 /* Copy Frameworks */ = {
@@ -5674,8 +5684,8 @@
 		2D651D06227227A000375AE2 /* ScriptableNodeEditorWindow.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = ScriptableNodeEditorWindow.xib; sourceTree = "<group>"; };
 		2D651D15227227C300375AE2 /* ScriptableNodeEditorWindowController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ScriptableNodeEditorWindowController.h; sourceTree = "<group>"; };
 		2D651D16227227C300375AE2 /* ScriptableNodeEditorWindowController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ScriptableNodeEditorWindowController.m; sourceTree = "<group>"; };
-		2D651D19227227FA00375AE2 /* ScriptableNodeEditorView.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = ScriptableNodeEditorView.xib; sourceTree = "<group>"; };
-		2D651D1B22722AD200375AE2 /* ScriptableSelectView.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = ScriptableSelectView.xib; sourceTree = "<group>"; };
+		2D651D19227227FA00375AE2 /* ScriptableNodeEditorViewController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = ScriptableNodeEditorViewController.xib; sourceTree = "<group>"; };
+		2D651D1B22722AD200375AE2 /* ScriptableSelectViewController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = ScriptableSelectViewController.xib; sourceTree = "<group>"; };
 		2D652FCB1CE79E8500163808 /* adplug.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = adplug.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		2D6530551CE79ED400163808 /* adplug-db.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "adplug-db.cpp"; sourceTree = "<group>"; };
 		2D6530581CE79ED400163808 /* binfile.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = binfile.cpp; sourceTree = "<group>"; };
@@ -6810,7 +6820,7 @@
 		2DD376FC2739B854007AD315 /* libavcodec.58.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libavcodec.58.dylib; path = deps/ffmpeg/lib/libavcodec.58.dylib; sourceTree = "<group>"; };
 		2DD376FD2739B854007AD315 /* libavutil.56.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libavutil.56.dylib; path = deps/ffmpeg/lib/libavutil.56.dylib; sourceTree = "<group>"; };
 		2DD376FE2739B854007AD315 /* libavformat.58.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libavformat.58.dylib; path = deps/ffmpeg/lib/libavformat.58.dylib; sourceTree = "<group>"; };
-		2DD377422740420C007AD315 /* AppearancePreferences.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = AppearancePreferences.xib; sourceTree = "<group>"; };
+		2DD377422740420C007AD315 /* AppearancePreferencesViewController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = AppearancePreferencesViewController.xib; sourceTree = "<group>"; };
 		2DD3774427404401007AD315 /* AppearancePreferencesViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppearancePreferencesViewController.h; sourceTree = "<group>"; };
 		2DD3774527404401007AD315 /* AppearancePreferencesViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppearancePreferencesViewController.m; sourceTree = "<group>"; };
 		2DD3774827404E11007AD315 /* VisualizationSettingsUtil.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VisualizationSettingsUtil.h; sourceTree = "<group>"; };
@@ -6835,6 +6845,8 @@
 		2DD877A21C370C7100CC94FB /* ferror68.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ferror68.c; sourceTree = "<group>"; };
 		2DD9EF0419A5089F00189344 /* cocoautil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cocoautil.h; sourceTree = "<group>"; };
 		2DD9EF0519A5089F00189344 /* cocoautil.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = cocoautil.m; sourceTree = "<group>"; };
+		2DD9F4E72A7A65FD00BC76DC /* TrackPropertiesManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TrackPropertiesManager.h; sourceTree = "<group>"; };
+		2DD9F4E82A7A65FD00BC76DC /* TrackPropertiesManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TrackPropertiesManager.m; sourceTree = "<group>"; };
 		2DDBA24B23E5E66D00051320 /* PlaylistContentView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PlaylistContentView.h; sourceTree = "<group>"; };
 		2DDBA24C23E5E66D00051320 /* PlaylistContentView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PlaylistContentView.m; sourceTree = "<group>"; };
 		2DDBA25E23E5EA3800051320 /* PlaylistLocalDragDropHolder.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PlaylistLocalDragDropHolder.h; sourceTree = "<group>"; };
@@ -7621,7 +7633,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2D00FE94243539CB000FC130 /* libzip.framework in Frameworks */,
+				2DCB5F392A71923200F20ABC /* libzip.framework in Frameworks */,
 				2D00FE93243539AA000FC130 /* libz.tbd in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -7922,6 +7934,7 @@
 				2D01D7EA1AB221B200BCD3C4 /* libddbcore.a in Frameworks */,
 				4D1B51691837F669003E6066 /* CoreAudio.framework in Frameworks */,
 				4D1B51681837F655003E6066 /* AudioUnit.framework in Frameworks */,
+				2DCB5F3E2A71928600F20ABC /* libzip.framework in Frameworks */,
 				4D1B3E7E18379829003E6066 /* Cocoa.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -9604,7 +9617,7 @@
 		2D6202AF1B90800A00594746 /* XIB */ = {
 			isa = PBXGroup;
 			children = (
-				2DD377422740420C007AD315 /* AppearancePreferences.xib */,
+				2DD377422740420C007AD315 /* AppearancePreferencesViewController.xib */,
 				2D2351271B13922400A62936 /* Converter.xib */,
 				2DA5E330238DB0C4005832B7 /* EditColumnPanel.xib */,
 				2DEBA1D123E207A3000E4135 /* EqualizerWindowController.xib */,
@@ -9616,9 +9629,9 @@
 				2D11E8B11AA0E3DD00A67A20 /* MainWindow.xib */,
 				2D3EBD9C1A9379BD00E5E255 /* Preferences.xib */,
 				2D1A56391D9FF9A4005E5CDD /* ReplayGain.xib */,
-				2D651D19227227FA00375AE2 /* ScriptableNodeEditorView.xib */,
+				2D651D19227227FA00375AE2 /* ScriptableNodeEditorViewController.xib */,
 				2D651D06227227A000375AE2 /* ScriptableNodeEditorWindow.xib */,
-				2D651D1B22722AD200375AE2 /* ScriptableSelectView.xib */,
+				2D651D1B22722AD200375AE2 /* ScriptableSelectViewController.xib */,
 				2D828E5319E5679800EE874F /* Search.xib */,
 				2D747E3C24B64E9300BBB987 /* SplitViewMainWindow.xib */,
 				2DC80A8E1A9222F800C9397F /* TrackProperties.xib */,
@@ -11383,6 +11396,8 @@
 			children = (
 				2DAF2BDF1A9232AF0052854F /* TrackPropertiesWindowController.h */,
 				2DAF2BE01A9232AF0052854F /* TrackPropertiesWindowController.m */,
+				2DD9F4E72A7A65FD00BC76DC /* TrackPropertiesManager.h */,
+				2DD9F4E82A7A65FD00BC76DC /* TrackPropertiesManager.m */,
 			);
 			path = TrackProperties;
 			sourceTree = "<group>";
@@ -11471,8 +11486,6 @@
 		2DC657E6274A603A00583E14 /* PlaylistBrowser */ = {
 			isa = PBXGroup;
 			children = (
-				2DDD796125E15ED200FA6FE5 /* PlaylistWidget.h */,
-				2DDD796225E15ED200FA6FE5 /* PlaylistWidget.m */,
 				2DC657E7274A605E00583E14 /* PlaylistBrowserViewController.h */,
 				2DC657E8274A605E00583E14 /* PlaylistBrowserViewController.m */,
 				2DC657E9274A605E00583E14 /* PlaylistBrowserViewController.xib */,
@@ -11930,6 +11943,8 @@
 				2DE1D3E519B11539009B5BC6 /* PlaceholderWidget.m */,
 				2DC657E0274A5F6000583E14 /* PlaylistBrowserWidget.h */,
 				2DC657E1274A5F6000583E14 /* PlaylistBrowserWidget.m */,
+				2DDD796125E15ED200FA6FE5 /* PlaylistWidget.h */,
+				2DDD796225E15ED200FA6FE5 /* PlaylistWidget.m */,
 				2DC657CA2749544000583E14 /* PlaylistWithTabsWidget.h */,
 				2DC657CB2749544000583E14 /* PlaylistWithTabsWidget.m */,
 				0D568526271DC35E0026F700 /* ScopeWidget.h */,
@@ -14298,6 +14313,7 @@
 				2DDBA26023E5EA3800051320 /* PlaylistLocalDragDropHolder.h in Headers */,
 				2D8E9C1B19ED5F7400EE1408 /* deadbeef.h in Headers */,
 				2DA273782406ED4100FB9BE1 /* GuiPreferencesWindowController.h in Headers */,
+				2DD9F4E92A7A65FD00BC76DC /* TrackPropertiesManager.h in Headers */,
 				2DC657D42749581900583E14 /* DdbTabStripViewController.h in Headers */,
 				2DCCCF7E26C43D080034F4BB /* medialibwidget.h in Headers */,
 				2DDD789C25E15C9E00FA6FE5 /* WidgetBase.h in Headers */,
@@ -14864,11 +14880,12 @@
 				2D4458D51C04F1C000230939 /* Sources */,
 				2D4458D61C04F1C000230939 /* Frameworks */,
 				2D4458D71C04F1C000230939 /* Headers */,
-				2D00FE96243539CB000FC130 /* Embed Frameworks */,
+				2DCB5F3B2A71923300F20ABC /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				2DCB5F3D2A71923C00F20ABC /* PBXTargetDependency */,
 			);
 			name = vfs_zip;
 			productName = vfs_zip;
@@ -16297,7 +16314,7 @@
 				4D877B36183BBF1F008A114B /* btnplayTemplate.pdf in Resources */,
 				2DD3774E27412C85007AD315 /* SpectrumAnalyzerPreferencesWindowController.xib in Resources */,
 				4D2A6CA3183BC29400AC6BF5 /* btnprevTemplate.pdf in Resources */,
-				2DD377432740420C007AD315 /* AppearancePreferences.xib in Resources */,
+				2DD377432740420C007AD315 /* AppearancePreferencesViewController.xib in Resources */,
 				4D2A6CA2183BC29400AC6BF5 /* btnpauseTemplate.pdf in Resources */,
 				2DB05FBC252E50FD0090635E /* iconDSPTemplate.pdf in Resources */,
 				2DB05F3A252E4DDB0090635E /* iconPlaybackTemplate.pdf in Resources */,
@@ -16336,11 +16353,11 @@
 				2D2351281B13922400A62936 /* Converter.xib in Resources */,
 				2DC80A8F1A9222F800C9397F /* TrackProperties.xib in Resources */,
 				2D49856F1D5CF0E900E4D985 /* Log.xib in Resources */,
-				2D651D1A227227FA00375AE2 /* ScriptableNodeEditorView.xib in Resources */,
+				2D651D1A227227FA00375AE2 /* ScriptableNodeEditorViewController.xib in Resources */,
 				2D1A563A1D9FF9A4005E5CDD /* ReplayGain.xib in Resources */,
 				2D651D07227227A000375AE2 /* ScriptableNodeEditorWindow.xib in Resources */,
 				2DBCA69A27944B2200D7432F /* COPYING.GPLv2 in Resources */,
-				2D651D1C22722AD200375AE2 /* ScriptableSelectView.xib in Resources */,
+				2D651D1C22722AD200375AE2 /* ScriptableSelectViewController.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -17946,6 +17963,7 @@
 				2DF55C2A2270F415002C44DC /* ScriptableSelectViewController.m in Sources */,
 				2DE1D3E719B11539009B5BC6 /* PlaceholderWidget.m in Sources */,
 				2D92D32A29B92FC800218F1D /* trkproperties_shared.c in Sources */,
+				2DD9F4EA2A7A65FD00BC76DC /* TrackPropertiesManager.m in Sources */,
 				2D92D33A29B9322700218F1D /* tftintutil.c in Sources */,
 				2DDE52A724F821630096EF80 /* MediaLibraryOutlineView.m in Sources */,
 				2DC657FA274A7C4600583E14 /* RenamePlaylistViewController.m in Sources */,
@@ -19045,6 +19063,11 @@
 			isa = PBXTargetDependency;
 			target = 2DCB281319E86162008E9DF6 /* m3u */;
 			targetProxy = 2DCB281B19E8618D008E9DF6 /* PBXContainerItemProxy */;
+		};
+		2DCB5F3D2A71923C00F20ABC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = libzip;
+			targetProxy = 2DCB5F3C2A71923C00F20ABC /* PBXContainerItemProxy */;
 		};
 		2DDF87E924027FC600CA8E91 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;

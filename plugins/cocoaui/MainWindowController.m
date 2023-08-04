@@ -27,6 +27,7 @@
 #import "GuiPreferencesWindowController.h"
 #import "MainWindowController.h"
 #import "PlaylistWidget.h"
+#import "PlaylistWithTabsWidget.h"
 #import "PreferencesWindowController.h"
 #import "TrackPositionFormatter.h"
 #include <deadbeef/deadbeef.h>
@@ -78,16 +79,25 @@ extern DB_functions_t *deadbeef;
     [self freeTitleBarConfig];
 }
 
-- (BOOL)setInitialFirstResponder:(id<WidgetProtocol>)widget {
-    if ([widget respondsToSelector:@selector(makeFirstResponder)]) {
+// Find and activate the first visible playlist widget
+- (BOOL)setupInitialFirstResponder:(id<WidgetProtocol>)widget {
+    BOOL visible = widget.view.window != nil; // inactive tab check within NSTabView
+    BOOL responder = [widget respondsToSelector:@selector(makeFirstResponder)];
+    BOOL isPlaylistWithTabs = [widget.widgetType isEqualToString:PlaylistWithTabsWidget.widgetType];
+    BOOL isPlaylist = [widget.widgetType isEqualToString:PlaylistWidget.widgetType];
+
+    if (visible && responder
+        && (isPlaylist || isPlaylistWithTabs)) {
         [widget makeFirstResponder];
         return YES;
     }
+
     for (id<WidgetProtocol> child in widget.childWidgets) {
-        if ([self setInitialFirstResponder:child]) {
+        if ([self setupInitialFirstResponder:child]) {
             return YES;
         }
     }
+
     return NO;
 }
 
@@ -105,7 +115,7 @@ extern DB_functions_t *deadbeef;
     self.playlistWithTabsView = self.splitViewController.bodyViewController.wrapperView;
     self.designableContainerView = self.splitViewController.bodyViewController.designableView;
 #else
-    self.mainContentViewController = [[MainContentViewController alloc] initWithNibName:@"MainContentViewController" bundle:nil];
+    self.mainContentViewController = [MainContentViewController new];
     [self.designableContainerView addSubview:self.mainContentViewController.view];
     [NSLayoutConstraint activateConstraints:@[
         [self.designableContainerView.topAnchor constraintEqualToAnchor:self.mainContentViewController.view.topAnchor],
@@ -128,8 +138,6 @@ extern DB_functions_t *deadbeef;
     [view.leadingAnchor constraintEqualToAnchor:self.designableContainerView.leadingAnchor].active = YES;
     [view.trailingAnchor constraintEqualToAnchor:self.designableContainerView.trailingAnchor].active = YES;
 
-    [self setInitialFirstResponder:rootWidget];
-
     NSLayoutYAxisAnchor *topAnchor;
     if (self.window.contentLayoutGuide && self.playlistWithTabsView) {
         // HACK: this is not well-documented and not safe.
@@ -145,11 +153,29 @@ extern DB_functions_t *deadbeef;
     // seekbar value formatter
     self.seekBar.formatter = [TrackPositionFormatter new];
 
-    __weak MainWindowController *weakself = self;
+    [self ensureRefresh];
+}
+
+- (void)ensureRefresh {
+    if (_updateTimer != nil) {
+        return;
+    }
+    if (deadbeef->get_output()->state() != DDB_PLAYBACK_STATE_PLAYING) {
+        return;
+    }
+
+    __weak MainWindowController *weakSelf = self;
     _updateTimer = [NSTimer timerWithTimeInterval:1.0f/10.0f repeats:YES block:^(NSTimer * _Nonnull timer) {
-        MainWindowController *strongself = weakself;
-        if (strongself) {
-            [self frameUpdate];
+        MainWindowController *strongSelf = weakSelf;
+        if (strongSelf == nil) {
+            return;
+        }
+
+        [strongSelf frameUpdate];
+
+        if (deadbeef->get_output()->state() != DDB_PLAYBACK_STATE_PLAYING) {
+            [strongSelf->_updateTimer invalidate];
+            strongSelf->_updateTimer = nil;
         }
     }];
 
@@ -201,7 +227,7 @@ static char sb_text[512];
     
     if (strcmp (sbtext_new, sb_text)) {
         strcpy (sb_text, sbtext_new);
-        self.statusBar.stringValue = [NSString stringWithUTF8String:sb_text];
+        self.statusBar.stringValue = @(sb_text);
     }
     
     if (track) {
@@ -209,7 +235,7 @@ static char sb_text[512];
     }
 }
 
-- (void)advanceSeekBar:(DB_playItem_t *)trk {
+- (void)refreshSeekBar:(DB_playItem_t *)trk {
     float dur = -1;
     float perc = 0;
     if (trk) {
@@ -228,7 +254,7 @@ static char sb_text[512];
         }
     }
 
-    if (![_seekBar dragging]) {
+    if (!_seekBar.dragging) {
         int cmp =(int)(perc*4000);
         if (cmp != _prevSeekBarPos) {
             _prevSeekBarPos = cmp;
@@ -246,13 +272,9 @@ static char sb_text[512];
 }
 
 - (void)frameUpdate {
-    if (![self.window isVisible]) {
-        return;
-    }
-
     DB_playItem_t *trk = deadbeef->streamer_get_playing_track_safe ();
 
-    [self advanceSeekBar:trk];
+    [self refreshSeekBar:trk];
 
     [self updateSonginfo];
 
@@ -462,13 +484,13 @@ static char sb_text[512];
 
 #if defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 101600
     if (@available(macOS 10.16, *)) {
-        self.window.title = [NSString stringWithUTF8String:titleBuffer];
-        self.window.subtitle = [NSString stringWithUTF8String:subtitleBuffer];
+        self.window.title = @(titleBuffer);
+        self.window.subtitle = @(subtitleBuffer);
     } else
 #endif
     {
-        NSString *title = [NSString stringWithUTF8String:titleBuffer];
-        NSString *subTitle = [NSString stringWithUTF8String:subtitleBuffer];
+        NSString *title = @(titleBuffer);
+        NSString *subTitle = @(subtitleBuffer);
 
         self.window.title = [NSString stringWithFormat:@"%@%@%@", subTitle, (titleBuffer[0] && subtitleBuffer[0]) ? @" - " : @"", title];
     }
@@ -482,6 +504,12 @@ static char sb_text[512];
         self.volumeDbScaleItem.state = !strcmp (scale, "dB") ? NSControlStateValueOn : NSControlStateValueOff;
         self.volumeLinearScaleItem.state = !strcmp (scale, "linear") ? NSControlStateValueOn : NSControlStateValueOff;
         self.volumeCubicScaleItem.state = !strcmp (scale, "cubic") ? NSControlStateValueOn : NSControlStateValueOff;
+    }
+}
+
+- (void)message:(int)_id ctx:(uint64_t)ctx p1:(uint32_t)p1 p2:(uint32_t)p2 {
+    if (_id == DB_EV_PLAYBACK_STATE_DID_CHANGE) {
+        [self performSelectorOnMainThread:@selector(ensureRefresh) withObject:nil waitUntilDone:NO];
     }
 }
 

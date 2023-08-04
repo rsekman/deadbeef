@@ -936,7 +936,7 @@ static const char *junk_genretbl[] = {
 };
 
 static int
-can_be_russian (const signed char *str, int size) {
+can_be_cp1251 (const signed char *str, int size) {
     if (!enable_cp1251_detection) {
         return 0;
     }
@@ -1043,7 +1043,7 @@ convstr_id3v2 (const char *sb_charset, int version, uint8_t encoding, const uint
             // hack to add cp936 support
             enc = "cp936";
         }
-        else if (can_be_russian (str, sz)) {
+        else if (can_be_cp1251 (str, sz)) {
             // hack to add limited cp1251 recoding support
             enc = "cp1251";
         }
@@ -1781,7 +1781,7 @@ junk_apev2_read_full (playItem_t *it, DB_apev2_tag_t *tag_store, DB_FILE *fp) {
         pl_set_item_flags (it, f);
     }
 
-    // now seek to beginning of the tag (exluding header)
+    // now seek to beginning of the tag (excluding header)
     if (deadbeef->fseek (fp, -size, SEEK_CUR) == -1) {
         trace ("failed to seek to tag start (-%d)\n", size);
         return -1;
@@ -4669,7 +4669,7 @@ junk_detect_charset_len (const char *s, int len) {
        return "cp936";
     }
     // check if that could be non-latin1 (too many nonascii chars)
-    if (can_be_russian (s, len)) {
+    if (can_be_cp1251 (s, len)) {
         return "cp1251";
     }
 
