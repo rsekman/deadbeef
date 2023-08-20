@@ -37,11 +37,17 @@ typedef enum {
 } medialibSelector_t;
 
 typedef struct ml_tree_item_s {
-    uint64_t row_id; // a unique ID of the associated ml_string_t
+    /// Path to the node in the tree
+    /// Can be NULL
+    /// Used as a unique identifier
+    const char *path;
 
-    const char *text; // e.g. the genre
+    // Display text
+    const char *text;
 
-    DB_playItem_t *track; // NULL in non-leaf nodes
+    // The track associated with the node,
+    // expected to be NULL in non-leaf nodes
+    DB_playItem_t *track;
 
     struct ml_tree_item_s *next;
     struct ml_tree_item_s *children;
@@ -55,7 +61,7 @@ void
 ml_tree_free (void);
 
 ml_tree_item_t *
-_create_item_tree_from_collection(ml_collection_t *coll, const char *filter, medialibSelector_t index, medialib_source_t *source);
+_create_item_tree_from_collection(const char *filter, medialibSelector_t index, medialib_source_t *source);
 
 void
 ml_free_list (ddb_mediasource_source_t source, ddb_medialib_item_t *list);

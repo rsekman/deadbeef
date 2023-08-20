@@ -21,308 +21,469 @@
     3. This notice may not be removed or altered from any source distribution.
 */
 
+#include <assert.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <sys/time.h>
 #include "medialibsource.h"
 #include "medialibtree.h"
+
+//#define DUMP_GENERATED_TREE 1
 
 static DB_functions_t *deadbeef;
 
 static char *artist_album_bc;
 static char *title_bc;
 
-static int _is_blank_text (const char *track_field) {
-    if (!track_field) {
-        return 1;
-    }
-    for (int i = 0; track_field[i]; i++) {
-        if (track_field[i] < 0 || track_field[i] > 0x20) {
-            return 0;
-        }
-    }
-    return 1;
-}
-
 static ml_tree_item_t *
-_tree_item_alloc (uint64_t row_id) {
+_tree_item_alloc (const char *path) {
     ml_tree_item_t *item = calloc (1, sizeof (ml_tree_item_t));
-    item->row_id = row_id;
+    if (path != NULL) {
+        item->path = deadbeef->metacache_add_string(path);
+    }
     return item;
 }
 
-static void
-get_albums_for_collection_group_by_field (medialib_source_t *source, ml_tree_item_t *root, ml_collection_t *coll, const char *field, int field_tf, const char /* nonnull */ *default_field_value, int selected) {
+static ddb_playItem_t *
+_create_sorted_tree(
+    ddb_playlist_t *plt,
+    ml_tree_item_t *parent,
+    int selected,
+    ddb_playItem_t *first,
+    char * const * const tfs,
+    char * const * const text_tfs,
+    size_t tfs_count,
+    int level
+) {
 
-    default_field_value = deadbeef->metacache_add_string (default_field_value);
+    ddb_tf_context_t ctx = {0};
+    ctx._size = sizeof (ddb_tf_context_t);
+    ctx.flags = DDB_TF_CONTEXT_NO_MUTEX_LOCK | DDB_TF_CONTEXT_NO_DYNAMIC;
+    ctx.plt = plt;
+    ctx.iter = PL_MAIN;
 
-    char text[1024];
-
-    char *tf = NULL;
-    if (field_tf) {
-        tf = deadbeef->tf_compile (field);
+    char group_text[1000] = "";
+    ddb_playItem_t *next = NULL;
+    if (first != NULL) {
+        next = first;
+        deadbeef->pl_item_ref(next);
+    }
+    else if (parent->track) {
+        next = parent->track;
+        deadbeef->pl_item_ref(next);
+    }
+    else {
+        next = deadbeef->plt_get_first(plt, PL_MAIN);
     }
 
-    ml_tree_item_t *root_tail = NULL;
+    if (next == NULL) {
+        return NULL; // empty list
+    }
 
-    for (ml_collection_tree_node_t *album = source->db.albums.root.children; album != NULL; album = album->next) {
-        if (!album->items_count) {
-            continue;
+    ml_tree_item_t *group = NULL;
+
+    ml_tree_item_t *tail = parent->children;
+    while (tail && tail->next) {
+        tail = tail->next;
+    }
+
+    int group_did_change = 1;
+
+    while (next) {
+        if (selected && !deadbeef->pl_is_selected(next)) {
+            ddb_playItem_t *it = deadbeef->pl_get_next(next, PL_MAIN);
+            deadbeef->pl_item_unref(next);
+            next = it;
+            continue; // filter
         }
 
-        ml_tree_item_t *album_item = NULL;
-        ml_tree_item_t *album_tail = NULL;
+        bool should_create_node = false;
+        bool is_leaf = false;
 
-
-        // find the bucket -- a genre or artist
-        const char *mc_str_for_track_field = NULL;
-        const char *track_field = NULL;
-        if (!tf) {
-            track_field = deadbeef->pl_find_meta (album->items->it, field);
-
-            // This is necessary to reference a single value from multivalue fields
-            if (track_field != NULL) {
-                track_field = mc_str_for_track_field = deadbeef->metacache_add_string (track_field);
-            }
+        if (level == tfs_count - 1) {
+            // create node, next, return
+            should_create_node = true;
+            is_leaf = true;
         }
         else {
-            ddb_tf_context_t ctx = {
-                ._size = sizeof (ddb_tf_context_t),
-                .flags = DDB_TF_CONTEXT_NO_MUTEX_LOCK,
-                .it = album->items->it,
-            };
-
-            deadbeef->tf_eval (&ctx, tf, text, sizeof (text));
-            track_field = mc_str_for_track_field = deadbeef->metacache_add_string (text);
+            should_create_node = group_did_change;
         }
 
-        if (_is_blank_text (track_field)) {
-            track_field = default_field_value;
+        int group_level = level;
+        if (level == tfs_count - 1) {
+            group_level--;
         }
 
-        // Find the bucket of this album - e.g. a genre or an artist
-        // NOTE: multiple albums may belong to the same bucket
-        ml_collection_tree_node_t *s = NULL;
-        for (s = coll->root.children; s; s = s->next) {
-            if (track_field == s->text) {
+        // Compare group text
+        if (should_create_node) {
+            char next_text[1000];
+            ctx.it = next;
+            deadbeef->tf_eval(&ctx, tfs[group_level], next_text, sizeof (next_text));
+
+            size_t len = strlen(next_text);
+
+            // Create new item
+            memcpy(group_text, next_text, len+1);
+
+            size_t parent_len = parent->path ? strlen(parent->path) : 0;
+            size_t node_len = strlen(next_text);
+            size_t buffer_len = parent_len + node_len + 2;
+            char *tree_path = malloc(buffer_len);
+            snprintf(tree_path, buffer_len, "%s/%s", parent->path ?: "", next_text);
+
+            group = _tree_item_alloc(tree_path);
+            free (tree_path);
+
+            deadbeef->tf_eval(&ctx, text_tfs[level], next_text, sizeof (next_text));
+            group->text = deadbeef->metacache_add_string(next_text);
+            if (is_leaf) {
+                deadbeef->pl_item_ref (next);
+                group->track = next;
+            }
+
+#if DUMP_GENERATED_TREE
+            for (int indent = 0; indent < level; indent++) {
+                printf ("    ");
+            }
+            printf("%s\n", next_text);
+#endif
+
+            if (tail == NULL) {
+                parent->children = group;
+            }
+            else {
+                tail->next = group;
+            }
+            tail = group;
+            parent->num_children++;
+        }
+
+        if (is_leaf) {
+            ddb_playItem_t *it = next;
+            next = deadbeef->pl_get_next(it, PL_MAIN);
+            deadbeef->pl_item_unref(it);
+        }
+        else {
+            // recurse into subgroups
+            ddb_playItem_t *new_next = _create_sorted_tree(plt, group, selected, next, tfs, text_tfs, tfs_count, level+1);
+            deadbeef->pl_item_unref(next);
+            next = new_next;
+        }
+
+        if (next == NULL) {
+            break;
+        }
+
+        char next_text[1000];
+        ctx.it = next;
+        deadbeef->tf_eval(&ctx, tfs[group_level], next_text, sizeof (next_text));
+        group_did_change = strcmp(group_text, next_text);
+
+        if (group_did_change && level > 0) {
+            break;
+        }
+    }
+
+    return next;
+}
+
+static void
+_create_tf_tree(medialib_source_t *source, ml_tree_item_t *root, int selected, const char **tfs, int tfs_count) {
+    size_t tf_sort_size = 0;
+
+    char **bcs = calloc (tfs_count, sizeof (char *));
+    char **text_bcs = calloc (tfs_count, sizeof (char *));
+
+    // create combined titleformat strings for each level of depth,
+    // separate levels with '/' character
+    for (int i = 0; i < tfs_count; i++) {
+        text_bcs[i] = deadbeef->tf_compile(tfs[i]);
+
+        // bcs should contain current + all "parent" bcs
+        size_t bc_len = 0;
+        for (int j = 0; j <= i; j++) {
+            bc_len += strlen(tfs[j]) + 1;
+        }
+        bc_len++;
+
+        char *bc = calloc (1, bc_len);
+        char *p = bc;
+        for (int j = 0; j <= i; j++) {
+            size_t len = strlen(tfs[j]);
+            memcpy(p, tfs[j], len);
+            p += len;
+            if (j != i) {
+                *p++ = '/';
+            }
+        }
+        *p = 0;
+
+        bcs[i] = deadbeef->tf_compile(bc);
+        free (bc);
+
+        tf_sort_size += strlen(tfs[i]);
+    }
+    tf_sort_size++;
+
+    char *tf_sort = calloc (1, tf_sort_size);
+    char *curr = tf_sort;
+    for (int i = 0; i < tfs_count; i++) {
+        size_t len = strlen(tfs[i]);
+        memcpy(curr, tfs[i], len);
+        curr += len;
+    }
+    *curr = 0;
+
+    deadbeef->plt_sort_v2(source->ml_playlist, PL_MAIN, -1, tf_sort, DDB_SORT_ASCENDING);
+
+    _create_sorted_tree(source->ml_playlist, root, selected, NULL, bcs, text_bcs, tfs_count, 0);
+
+    for (int i = 0; i < tfs_count; i++) {
+        deadbeef->tf_free(bcs[i]);
+        deadbeef->tf_free(text_bcs[i]);
+    }
+    free (bcs);
+    free (text_bcs);
+    free (tf_sort);
+}
+
+static bool
+_path_equal_to_depth(const char *path1, const char *path2, int depth) {
+    depth++;
+    while (*path1 && *path2 && *path1 == *path2) {
+        if (*path1 == '/') {
+            if (--depth < 0) {
+                return true;
+            }
+        }
+        path1++;
+        path2++;
+    }
+    return false;
+}
+
+static bool
+_is_last_path_component(const char *path, int depth) {
+    depth++;
+    while (*path) {
+        if (*path == '/') {
+            if (--depth < 0) {
+                path++;
                 break;
             }
         }
-
-        if (s == NULL) {
-            if (mc_str_for_track_field) {
-                deadbeef->metacache_remove_string (mc_str_for_track_field);
-            }
-            continue;
-        }
-
-        // Add all of the album's tracks into that bucket
-        ml_collection_track_ref_t *album_coll_item = album->items;
-        for (int j = 0; j < album->items_count; j++, album_coll_item = album_coll_item->next) {
-            if (selected && !deadbeef->pl_is_selected (album_coll_item->it)) {
-                continue;
-            }
-            int append = 0;
-
-            if (!s->coll_item) {
-                s->coll_item = _tree_item_alloc (s->row_id);
-                s->coll_item->text = deadbeef->metacache_add_string (s->text);
-                append = 1;
-            }
-
-            ddb_playItem_t *it = album_coll_item->it;
-
-            ml_tree_item_t *libitem = s->coll_item;
-
-            if (!album_item && s->coll_item) {
-                album_item = _tree_item_alloc (s->row_id);
-                if (s->coll_item_tail) {
-                    s->coll_item_tail->next = album_item;
-                    s->coll_item_tail = album_item;
-                }
-                else {
-                    s->coll_item_tail = album_item;
-                    libitem->children = album_item;
-                }
-
-                ddb_tf_context_t ctx = {
-                    ._size = sizeof (ddb_tf_context_t),
-                    .flags = DDB_TF_CONTEXT_NO_MUTEX_LOCK,
-                    .it = it,
-                };
-
-                deadbeef->tf_eval (&ctx, artist_album_bc, text, sizeof (text));
-
-                album_item->text = deadbeef->metacache_add_string (text);
-                libitem->num_children++;
-            }
-
-            ml_tree_item_t *track_item = calloc(1, sizeof (ml_tree_item_t));
-
-            if (album_tail) {
-                album_tail->next = track_item;
-                album_tail = track_item;
-            }
-            else {
-                album_tail = track_item;
-                album_item->children = track_item;
-            }
-            album_item->num_children++;
-
-            ddb_tf_context_t ctx = {
-                ._size = sizeof (ddb_tf_context_t),
-                .flags = DDB_TF_CONTEXT_NO_MUTEX_LOCK,
-                .it = it,
-            };
-
-            deadbeef->tf_eval (&ctx, title_bc, text, sizeof (text));
-
-            track_item->text = deadbeef->metacache_add_string (text);
-            deadbeef->pl_item_ref (it);
-            track_item->track = it;
-
-            if (!libitem->children) {
-                ml_free_list (source, (ddb_medialib_item_t *)libitem);
-                s->coll_item = NULL;
-                s->coll_item_tail = NULL;
-                continue;
-            }
-
-            if (append) {
-                if (root_tail) {
-                    root_tail->next = libitem;
-                    root_tail = libitem;
-                }
-                else {
-                    root_tail = libitem;
-                    root->children = libitem;
-                }
-                root->num_children++;
-            }
-        }
-
-        if (mc_str_for_track_field) {
-            deadbeef->metacache_remove_string (mc_str_for_track_field);
-        }
+        path++;
     }
 
-    deadbeef->metacache_remove_string (default_field_value);
-
-    if (tf) {
-        deadbeef->tf_free (tf);
-    }
+    return *path == 0;
 }
 
-static void
-get_list_of_tracks_for_album (ml_tree_item_t *libitem, ml_collection_tree_node_t *album, int selected) {
-    char text[1024];
-
-    ml_tree_item_t *album_item = NULL;
-    ml_tree_item_t *album_tail = NULL;
-
-    ml_collection_track_ref_t *album_coll_item = album->items;
-    for (int j = 0; j < album->items_count; j++, album_coll_item = album_coll_item->next) {
-        ddb_playItem_t *it = album_coll_item->it;
-        if (selected && !deadbeef->pl_is_selected(it)) {
-            continue;
-        }
-        ddb_tf_context_t ctx = {
-            ._size = sizeof (ddb_tf_context_t),
-            .flags = DDB_TF_CONTEXT_NO_MUTEX_LOCK,
-            .it = it,
-        };
-
-        if (!album_item) {
-            album_item = libitem;
-            deadbeef->tf_eval (&ctx, artist_album_bc, text, sizeof (text));
-
-            if (!_is_blank_text(text)) {
-                album_item->text = deadbeef->metacache_add_string (text);
-            }
-            else {
-                album_item->text = deadbeef->metacache_add_string ("<?>");
+static bool
+_get_path_component(const char *path, int depth, char *output, size_t output_size) {
+    while (*path) {
+        if (*path == '/') {
+            if (--depth < 0) {
+                path++;
+                break;
             }
         }
+        path++;
+    }
 
-        ml_tree_item_t *track_item = _tree_item_alloc(album_coll_item->row_id);
+    if (*path == 0) {
+        return false;
+    }
 
-        if (album_tail) {
-            album_tail->next = track_item;
-            album_tail = track_item;
+    while (*path && *path != '/' && output_size > 0) {
+        *output++ = *path++;
+        output_size--;
+    }
+
+    if (output_size == 0) {
+        return false;
+    }
+
+    *output = 0;
+
+    return true;
+}
+
+static ddb_playItem_t *
+_create_sorted_folder_tree(ddb_playlist_t *plt, ml_tree_item_t *parent, int selected, const char *track_tf_bc, ddb_playItem_t *first, int level) {
+    // setup iteration
+    char group_path[1000] = "";
+    ddb_playItem_t *next = NULL;
+    if (first != NULL) {
+        next = first;
+        deadbeef->pl_item_ref(next);
+    }
+    else if (parent->track) {
+        next = parent->track;
+        deadbeef->pl_item_ref(next);
+    }
+    else {
+        next = deadbeef->plt_get_first(plt, PL_MAIN);
+    }
+
+    if (next == NULL) {
+        return NULL; // empty list
+    }
+
+    ml_tree_item_t *group = NULL;
+
+    ml_tree_item_t *tail = parent->children;
+    while (tail && tail->next) {
+        tail = tail->next;
+    }
+
+    int group_did_change = 1;
+
+    ddb_tf_context_t ctx = {0};
+    ctx._size = sizeof (ddb_tf_context_t);
+    ctx.flags = DDB_TF_CONTEXT_NO_MUTEX_LOCK | DDB_TF_CONTEXT_NO_DYNAMIC;
+    ctx.plt = plt;
+    ctx.iter = PL_MAIN;
+
+    while (next) {
+        if (selected && !deadbeef->pl_is_selected(next)) {
+            ddb_playItem_t *it = deadbeef->pl_get_next(next, PL_MAIN);
+            deadbeef->pl_item_unref(next);
+            next = it;
+            continue; // filter
+        }
+
+        // get current path
+        const char *path = deadbeef->pl_find_meta_raw(next, ":URI");
+        char next_text[1000];
+
+        bool should_create_node = false;
+        bool is_leaf = false;
+
+        if (_is_last_path_component(path, level)) {
+            // create node, next, return
+            should_create_node = true;
+            is_leaf = true;
         }
         else {
-            album_tail = track_item;
-            album_item->children = track_item;
+            should_create_node = group_did_change;
         }
-        album_item->num_children++;
 
-        deadbeef->tf_eval (&ctx, title_bc, text, sizeof (text));
+        if (should_create_node) {
+            // new group
+            strcpy (group_path, path);
 
-        track_item->text = deadbeef->metacache_add_string (text);
-        deadbeef->pl_item_ref (it);
-        track_item->track = it;
+            if (is_leaf) {
+                ctx.it = next;
+                deadbeef->tf_eval(&ctx, track_tf_bc, next_text, sizeof (next_text));
+            }
+            else {
+                bool res = _get_path_component(path, level, next_text, sizeof (next_text));
+                if (!res) {
+                    strcpy(next_text, "<?>");
+                }
+            }
+
+            size_t parent_len = parent->path ? strlen(parent->path) : 0;
+            size_t node_len = strlen(next_text);
+            size_t buffer_len = parent_len + node_len + 2;
+            char *tree_path = malloc(buffer_len);
+            snprintf(tree_path, buffer_len, "%s/%s", parent->path ?: "", next_text);
+
+            group = _tree_item_alloc(tree_path);
+            free (tree_path);
+
+            group->text = deadbeef->metacache_add_string(next_text);
+            if (is_leaf) {
+                deadbeef->pl_item_ref (next);
+                group->track = next;
+            }
+
+#if DUMP_GENERATED_TREE
+            for (int indent = 0; indent < level; indent++) {
+                printf ("    ");
+            }
+            printf("%s\n", next_text);
+#endif
+
+            if (tail == NULL) {
+                parent->children = group;
+            }
+            else {
+                tail->next = group;
+            }
+            tail = group;
+            parent->num_children++;
+        }
+
+        if (is_leaf) {
+            ddb_playItem_t *it = next;
+            next = deadbeef->pl_get_next(it, PL_MAIN);
+            deadbeef->pl_item_unref(it);
+        }
+        else {
+            // recurse into subgroups
+            ddb_playItem_t *new_next = _create_sorted_folder_tree(plt, group, selected, track_tf_bc, next, level+1);
+            deadbeef->pl_item_unref(next);
+            next = new_next;
+        }
+
+        if (next == NULL) {
+            break;
+        }
+
+        // compare with previous path at level
+        path = deadbeef->pl_find_meta_raw(next, ":URI");
+        group_did_change = !_path_equal_to_depth(path, group_path, level);
+
+        if (group_did_change) {
+            break;
+        }
     }
+
+    return next;
 }
 
 static void
-get_subfolders_for_folder (ml_tree_item_t *folderitem, ml_collection_tree_node_t *folder, int selected) {
-    if (!folderitem->text) {
-        folderitem->text = deadbeef->metacache_add_string (folder->text);
-    }
+_create_folder_tree(medialib_source_t *source, ml_tree_item_t *root, int selected) {
+    const char *sort_tf = "$directory_path(%path%)/[%album artist% - ]%album%/[%tracknumber%. ]%title%";
+    deadbeef->plt_sort_v2(source->ml_playlist, PL_MAIN, -1, sort_tf, DDB_SORT_ASCENDING);
 
-    ml_tree_item_t *tail = NULL;
-    if (folder->children) {
-        for (ml_collection_tree_node_t *c = folder->children; c; c = c->next) {
-            ml_tree_item_t *subfolder = _tree_item_alloc(c->row_id);
-            get_subfolders_for_folder (subfolder, c, selected);
-            if (subfolder->num_children > 0) {
-                if (tail) {
-                    tail->next = subfolder;
-                    tail = subfolder;
-                }
-                else {
-                    folderitem->children = subfolder;
-                    tail = subfolder;
-                }
-                folderitem->num_children++;
+    char *track_tf_bc = deadbeef->tf_compile("[%tracknumber%. ]%title%");
+
+    _create_sorted_folder_tree(source->ml_playlist, root, selected, track_tf_bc, NULL, 0);
+
+    deadbeef->tf_free(track_tf_bc);
+
+    // squash single-item tree nodes
+    ml_tree_item_t *prev = NULL;
+    for (ml_tree_item_t *head = root->children; head != NULL; prev = head, head = head->next) {
+        while (head->num_children == 1) {
+            ml_tree_item_t *new_head = head->children;
+            new_head->next = head->next;
+
+            if (head->track) {
+                deadbeef->pl_item_unref(head->track);
+            }
+            if (head->text) {
+                deadbeef->metacache_remove_string(head->text);
+            }
+            if (head->path) {
+                deadbeef->metacache_remove_string(head->path);
+            }
+            free (head);
+            head = new_head;
+            if (prev != NULL) {
+                prev->next = head;
             }
             else {
-                ml_free_list (NULL, (ddb_medialib_item_t *)subfolder);
+                root->children = head;
             }
-        }
-    }
-    if (folder->items) {
-        for (ml_collection_track_ref_t *i = folder->items; i; i = i->next) {
-            if (selected && !deadbeef->pl_is_selected(i->it)) {
-                continue;
-            }
-            ml_tree_item_t *trackitem = _tree_item_alloc(i->row_id);
-            ddb_tf_context_t ctx = {
-                ._size = sizeof (ddb_tf_context_t),
-                .flags = DDB_TF_CONTEXT_NO_MUTEX_LOCK,
-                .it = i->it,
-            };
-            char text[1000];
-            deadbeef->tf_eval (&ctx, title_bc, text, sizeof (text));
-
-            trackitem->text = deadbeef->metacache_add_string (text);
-            trackitem->track = i->it;
-            deadbeef->pl_item_ref (i->it);
-
-            if (tail) {
-                tail->next = trackitem;
-                tail = trackitem;
-            }
-            else {
-                folderitem->children = trackitem;
-                tail = trackitem;
-            }
-            folderitem->num_children++;
         }
     }
 }
 
 ml_tree_item_t *
-_create_item_tree_from_collection(ml_collection_t *coll, const char *filter, medialibSelector_t index, medialib_source_t *source) {
+_create_item_tree_from_collection(const char *filter, medialibSelector_t index, medialib_source_t *source) {
     int selected = 0;
     if (filter && source->ml_playlist) {
         deadbeef->plt_search_reset (source->ml_playlist);
@@ -335,60 +496,46 @@ _create_item_tree_from_collection(ml_collection_t *coll, const char *filter, med
 
     ml_tree_item_t *root = _tree_item_alloc(0);
     root->text = deadbeef->metacache_add_string ("All Music");
+    root->path = deadbeef->metacache_add_string(root->text);
 
-    // make sure no dangling pointers from the previous run
-    if (coll) {
-        for (ml_collection_tree_node_t *s = coll->root.children; s; s = s->next) {
-            s->coll_item = NULL;
-            s->coll_item_tail = NULL;
-        }
+    if (source->ml_playlist == NULL) {
+        return root;
     }
 
     if (index == SEL_FOLDERS) {
-        get_subfolders_for_folder(root, &source->db.folders.root, selected);
+        _create_folder_tree(source, root, selected);
     }
     else if (index == SEL_ARTISTS) {
         // list of albums for artist
-        get_albums_for_collection_group_by_field (source, root, coll, "artist", 0, "<?>", selected);
+        const char *tfs[] = {
+            "$if2(%album artist%,\\<?\\>)",
+            "$if2(%album artist%,\\<?\\>) - $if2(%album%,\\<?\\>)",
+            "[%tracknumber%. ]%title%"
+        };
+
+        _create_tf_tree(source, root, selected, tfs, 3);
     }
     else if (index == SEL_GENRES) {
         // list of albums for genre
-        get_albums_for_collection_group_by_field (source, root, coll, "genre", 0, "<?>", selected);
+        const char *tfs[] = {
+            "$if2(%genre%,\\<?\\>)",
+            "$if2(%album artist%,\\<?\\>) - $if2(%album%,\\<?\\>)",
+            "[%tracknumber%. ]%title%"
+        };
+
+        _create_tf_tree(source, root, selected, tfs, 3);
     }
     else if (index == SEL_ALBUMS) {
         // list of tracks for album
-        ml_tree_item_t *tail = NULL;
-        ml_tree_item_t *parent = root;
-        for (ml_collection_tree_node_t *s = coll->root.children; s; s = s->next) {
-            ml_tree_item_t *item = _tree_item_alloc (s->row_id);
+        const char *tfs[] = {
+            "$if2(%album artist%,\\<?\\>) - $if2(%album%,\\<?\\>)",
+            "[%tracknumber%. ]%title%"
+        };
 
-            get_list_of_tracks_for_album (item, s, selected);
-
-            if (!item->children) {
-                ml_free_list (source, (ddb_medialib_item_t *)item);
-                continue;
-            }
-
-            if (tail) {
-                tail->next = item;
-                tail = item;
-            }
-            else {
-                tail = item;
-                parent->children = item;
-            }
-            parent->num_children++;
-        }
+        _create_tf_tree(source, root, selected, tfs, 2);
     }
 
     // cleanup
-    if (coll) {
-        for (ml_collection_tree_node_t *s = coll->root.children; s; s = s->next) {
-            s->coll_item = NULL;
-            s->coll_item_tail = NULL;
-        }
-    }
-
     gettimeofday (&tm2, NULL);
     long ms = (tm2.tv_sec*1000+tm2.tv_usec/1000) - (tm1.tv_sec*1000+tm1.tv_usec/1000);
 
@@ -410,6 +557,9 @@ ml_free_list (ddb_mediasource_source_t source, ddb_medialib_item_t *_list) {
         }
         if (list->text) {
             deadbeef->metacache_remove_string (list->text);
+        }
+        if (list->path) {
+            deadbeef->metacache_remove_string (list->path);
         }
 
         free (list);

@@ -29,7 +29,6 @@ extern DB_functions_t *deadbeef;
 @property (nullable, nonatomic) NSString *searchString;
 
 @property (nonatomic) NSArray *topLevelItems;
-@property (nonatomic) BOOL outlineViewInitialized;
 
 @property (nonatomic) int listenerId;
 
@@ -120,18 +119,29 @@ extern DB_functions_t *deadbeef;
     return self;
 }
 
-- (void)applicationWillQuit:(NSNotification *)notification {
+- (void)disconnect {
+    if (self.medialibPlugin == NULL) {
+        return;
+    }
+    if (self.listenerId != -1) {
+        self.medialibPlugin->remove_listener (self.medialibSource, self.listenerId);
+        self.listenerId = -1;
+    }
+    if (_selectors != NULL) {
+        self.medialibPlugin->free_selectors_list (self.medialibSource, _selectors);
+        _selectors = NULL;
+    }
     self.medialibPlugin = NULL;
     self.artworkPlugin = NULL;
+}
+
+- (void)applicationWillQuit:(NSNotification *)notification {
+    [self disconnect];
     NSLog(@"MediaLibraryOutlineViewController: received applicationWillQuit notification");
 }
 
 - (void)dealloc {
-    self.medialibPlugin->remove_listener (self.medialibSource, self.listenerId);
-    self.medialibPlugin->free_selectors_list (self.medialibSource, _selectors);
-    _selectors = NULL;
-    self.listenerId = -1;
-    self.medialibPlugin = NULL;
+    [self disconnect];
 }
 
 static void _medialib_listener (ddb_mediasource_event_type_t event, void *user_data) {
@@ -142,14 +152,6 @@ static void _medialib_listener (ddb_mediasource_event_type_t event, void *user_d
 }
 
 - (void)initializeTreeView:(int)index {
-    NSInteger itemIndex = NSNotFound;
-    if (self.outlineViewInitialized) {
-        itemIndex = [self.topLevelItems indexOfObject:self.medialibRootItem];
-        [self.outlineView removeItemsAtIndexes:[NSIndexSet indexSetWithIndex:itemIndex] inParent:nil withAnimation:NSTableViewAnimationEffectNone];
-        self.medialibRootItem = nil;
-        self.topLevelItems = nil;
-    }
-
     if (self.medialibItemTree) {
         self.medialibPlugin->free_item_tree (self.medialibSource, self.medialibItemTree);
         self.medialibItemTree = NULL;
@@ -161,24 +163,26 @@ static void _medialib_listener (ddb_mediasource_event_type_t event, void *user_d
         self.medialibRootItem,
     ];
 
-    if (self.outlineViewInitialized) {
-        [self.outlineView insertItemsAtIndexes:[NSIndexSet indexSetWithIndex:itemIndex] inParent:nil withAnimation:NSTableViewAnimationEffectNone];
-    }
-    if (!self.outlineViewInitialized) {
-        [self.outlineView reloadData];
-    }
+    [self.outlineView reloadData];
 
     // Restore selected/expanded state
     // Defer one frame, since the row indexes are unavailable immediately.
+    __weak MediaLibraryOutlineViewController *weakSelf = self;
     dispatch_async(dispatch_get_main_queue(), ^{
-        NSMutableIndexSet *selectedRowIndexes = [NSMutableIndexSet new];
-        [self.outlineView beginUpdates];
-        [self restoreSelectedExpandedStateForItem:self.medialibRootItem selectedRows:selectedRowIndexes];
-        [self.outlineView selectRowIndexes:selectedRowIndexes byExtendingSelection:NO];
-        [self.outlineView endUpdates];
+        MediaLibraryOutlineViewController *strongSelf = weakSelf;
+        if (strongSelf == nil) {
+            return;
+        }
+        [self applyStoredState];
     });
+}
 
-    self.outlineViewInitialized = YES;
+- (void)applyStoredState {
+    NSMutableIndexSet *selectedRowIndexes = [NSMutableIndexSet new];
+    [self.outlineView beginUpdates];
+    [self restoreSelectedExpandedStateForItem:self.medialibRootItem selectedRows:selectedRowIndexes];
+    [self.outlineView selectRowIndexes:selectedRowIndexes byExtendingSelection:NO];
+    [self.outlineView endUpdates];
 }
 
 - (void)saveSelectionStateWithItem:(MediaLibraryItem *)item {
