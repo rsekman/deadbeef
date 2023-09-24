@@ -27,6 +27,7 @@
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
 #endif
+#include <assert.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -92,6 +93,7 @@
 #include "scriptable/scriptable.h"
 #include "scriptable/scriptable_dsp.h"
 #include "scriptable/scriptable_encoder.h"
+//#include "scriptable/scriptable_tfquery.h"
 #endif
 
 #ifndef PREFIX
@@ -1068,6 +1070,10 @@ main_cleanup_and_quit (void) {
     plug_disconnect_all ();
     plug_unload_all (^{
         // at this point we can simply do exit(0), but let's clean up for debugging
+#ifdef OSX_APPBUNDLE
+        scriptableDeinitShared();
+#endif
+
         pl_free (); // may access conf_*
         conf_free ();
 
@@ -1498,6 +1504,10 @@ main (int argc, char *argv[]) {
     }
 
     messagepump_init (); // required to push messages while handling commandline
+
+#ifdef OSX_APPBUNDLE
+    scriptableInitShared();
+#endif
     if (plug_load_all ()) { // required to add files to playlist from commandline
         exit (-1);
     }
@@ -1526,9 +1536,8 @@ main (int argc, char *argv[]) {
 
 
 #ifdef OSX_APPBUNDLE
-    scriptableInit();
-    scriptableDspLoadPresets();
-    scriptableEncoderLoadPresets();
+    scriptableDspLoadPresets(scriptableRootShared());
+    scriptableEncoderLoadPresets(scriptableRootShared());
 #endif
 
     streamer_init ();

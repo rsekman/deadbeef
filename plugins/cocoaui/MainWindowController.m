@@ -21,23 +21,28 @@
     3. This notice may not be removed or altered from any source distribution.
 */
 
+#include <deadbeef/deadbeef.h>
+#import "DdbShared.h"
 #import "DeletePlaylistConfirmationController.h"
-#import "DesignModeState.h"
 #import "DesignModeDeps.h"
+#import "DesignModeState.h"
 #import "GuiPreferencesWindowController.h"
 #import "MainWindowController.h"
+#ifdef ENABLE_MEDIALIB
+#import "MediaLibraryManager.h"
+#endif
 #import "PlaylistWidget.h"
 #import "PlaylistWithTabsWidget.h"
 #import "PreferencesWindowController.h"
-#import "TrackPositionFormatter.h"
-#include <deadbeef/deadbeef.h>
-#import "DdbShared.h"
-#include <sys/time.h>
+#import "ScriptableErrorViewer.h"
+#import "ScriptableSelectViewController.h"
 #import "SidebarSplitViewController.h"
+#import "TrackPositionFormatter.h"
+#include <sys/time.h>
 
 extern DB_functions_t *deadbeef;
 
-@interface MainWindowController () <NSMenuDelegate,DeletePlaylistConfirmationControllerDelegate> {
+@interface MainWindowController () <NSMenuDelegate,DeletePlaylistConfirmationControllerDelegate,ScriptableSelectDelegate,ScriptableItemDelegate> {
     NSTimer *_updateTimer;
     char *_titlebar_playing_script;
     char *_titlebar_playing_subtitle_script;
@@ -47,6 +52,9 @@ extern DB_functions_t *deadbeef;
     int _prevSeekBarPos;
     int _deletePlaylistIndex;
 }
+
+@property (nonatomic) ScriptableTableDataSource *mlQueriesDataSource;
+@property (nonatomic) ScriptableSelectViewController *tfQuerySelectViewController;
 
 @property (nonatomic,weak) IBOutlet NSView *designableContainerView;
 @property (nonatomic,weak) IBOutlet NSView *playlistWithTabsView;
@@ -59,6 +67,7 @@ extern DB_functions_t *deadbeef;
 @property (weak) IBOutlet NSMenuItem *volumeDbScaleItem;
 @property (weak) IBOutlet NSMenuItem *volumeLinearScaleItem;
 @property (weak) IBOutlet NSMenuItem *volumeCubicScaleItem;
+@property (weak) IBOutlet NSView *tfQueryContainer;
 
 @end
 
@@ -115,6 +124,30 @@ extern DB_functions_t *deadbeef;
 #if ENABLE_MEDIALIB
     self.playlistWithTabsView = self.splitViewController.bodyViewController.wrapperView;
     self.designableContainerView = self.splitViewController.bodyViewController.designableView;
+
+
+    if (self.mediaLibraryManager.medialibPlugin && self.mediaLibraryManager.source) {
+        scriptableItem_t *tfQueryRoot =  self.mediaLibraryManager.medialibPlugin->get_queries_scriptable(self.mediaLibraryManager.source);
+        self.mlQueriesDataSource = [ScriptableTableDataSource dataSourceWithScriptable:tfQueryRoot];
+    }
+
+    // preset list and browse button
+    self.tfQuerySelectViewController = [ScriptableSelectViewController new];
+    self.tfQuerySelectViewController.scriptableItemDelegate = self;
+    self.tfQuerySelectViewController.scriptableSelectDelegate = self;
+    self.tfQuerySelectViewController.view.frame = _tfQueryContainer.bounds;
+    [_tfQueryContainer addSubview:self.tfQuerySelectViewController.view];
+    self.tfQuerySelectViewController.errorViewer = ScriptableErrorViewer.sharedInstance;
+    self.tfQuerySelectViewController.dataSource = self.mlQueriesDataSource;
+
+    if (self.mlQueriesDataSource.scriptable != NULL) {
+        NSString *preset = self.mediaLibraryManager.preset;
+        scriptableItem_t *currentPreset = scriptableItemSubItemForName(self.mlQueriesDataSource.scriptable, preset.UTF8String);
+        if (currentPreset != NULL) {
+            [self.tfQuerySelectViewController selectItem:currentPreset];
+        }
+    }
+
 #else
     self.mainContentViewController = [MainContentViewController new];
     [self.designableContainerView addSubview:self.mainContentViewController.view];
@@ -521,6 +554,34 @@ static char sb_text[512];
         deadbeef->plt_remove (_deletePlaylistIndex);
         _deletePlaylistIndex = -1;
     }
+}
+
+#pragma mark - ScriptableSelectDelegate
+
+- (void)scriptableSelectItemSelected:(scriptableItem_t *)item {
+#if ENABLE_MEDIALIB
+    const char *name = scriptableItemPropertyValueForKey(item, "name");
+    self.mediaLibraryManager.preset = @(name);
+#endif
+}
+
+#pragma mark - ScriptableItemDelegate
+
+- (void)scriptableItemDidChange:(scriptableItem_t *)scriptable change:(ScriptableItemChange)change {
+#if ENABLE_MEDIALIB
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [self.tfQuerySelectViewController reloadData];
+
+        // FIXME: save only when the dialog is closed
+        if (self.mediaLibraryManager.medialibPlugin && self.mediaLibraryManager.source) {
+            scriptableItem_t *tfQueryRoot =  self.mediaLibraryManager.medialibPlugin->get_queries_scriptable(self.mediaLibraryManager.source);
+            if (tfQueryRoot != NULL) {
+                scriptableItemSave(tfQueryRoot);
+            }
+
+        }
+    });
+#endif
 }
 
 @end

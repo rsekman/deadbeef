@@ -8,8 +8,12 @@
 
 #import <XCTest/XCTest.h>
 #include <deadbeef/common.h>
+#include "conf.h"
+#include "logger.h"
 #include "medialib.h"
 #include "plugins.h"
+#include "scriptable/scriptable.h"
+#include "scriptable_tfquery.h"
 
 @interface MediaLibTests : XCTestCase
 
@@ -23,7 +27,9 @@
 @implementation MediaLibTests
 
 - (void)setUp {
-    // Put setup code here. This method is called before the invocation of each test method in the class.
+    ddb_logger_init ();
+    conf_init ();
+    conf_enable_saving (0);
     self.plugin = (DB_mediasource_t *)plug_get_for_id("medialib");
     self.medialib = (ddb_medialib_plugin_api_t *)self.plugin->get_extended_api();
     self.scanCompletedExpectation = [[XCTestExpectation alloc] initWithDescription:@"Scan completed"];
@@ -31,7 +37,8 @@
 }
 
 - (void)tearDown {
-    // Put teardown code here. This method is called after the invocation of each test method in the class.
+    conf_free();
+    ddb_logger_free();
 }
 
 static void
@@ -62,7 +69,10 @@ _listener(ddb_mediasource_event_type_t event, void *user_data) {
 
     [self waitForExpectations:@[self.scanCompletedExpectation] timeout:5];
 
-    ddb_medialib_item_t *tree = self.plugin->create_item_tree(source, (ddb_mediasource_source_t)2, NULL); // FIXME: hardcoded selector
+    scriptableItem_t *root = scriptableTFQueryRootCreate ();
+    ml_scriptable_init(deadbeef, root);
+
+    ddb_medialib_item_t *tree = self.plugin->create_item_tree(source, scriptableItemSubItemForName(root, "Genres"), NULL);
 
     int count = 0;
     const ddb_medialib_item_t *children = self.plugin->tree_item_get_children(tree);
@@ -70,6 +80,8 @@ _listener(ddb_mediasource_event_type_t event, void *user_data) {
     self.plugin->free_item_tree(source, tree);
 
     self.plugin->free_source(source);
+
+    scriptableItemFree(root);
 
     XCTAssertEqual(count, 1);
 }

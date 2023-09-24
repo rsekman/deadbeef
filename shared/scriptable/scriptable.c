@@ -4,14 +4,37 @@
 #include <string.h>
 #include "scriptable/scriptable.h"
 
-static scriptableItem_t *rootNode;
+typedef struct scriptableKeyValue_s {
+    struct scriptableKeyValue_s *next;
+    char *key;
+    char *value;
+} scriptableKeyValue_t;
 
-scriptableKeyValue_t *
+struct scriptableItem_s {
+    struct scriptableItem_s *next;
+    uint64_t flags;
+    scriptableKeyValue_t *properties;
+
+    struct scriptableItem_s *parent;
+    struct scriptableItem_s *children;
+    struct scriptableItem_s *childrenTail;
+
+    /// the type name, as set by scriptableItemCreateItemOfType
+    /// This property is for debug only, not really used by the code.
+    /// Is nullable;
+    char *type;
+
+    char *configDialog;
+
+    scriptableOverrides_t *overrides;
+};
+
+static scriptableKeyValue_t *
 keyValuePairAlloc (void) {
     return calloc (1, sizeof (scriptableKeyValue_t));
 }
 
-void
+static void
 keyValuePairFree (scriptableKeyValue_t *p) {
     free (p->key);
     free (p->value);
@@ -23,18 +46,31 @@ scriptableItemAlloc (void) {
     return calloc (1, sizeof (scriptableItem_t));
 }
 
+void
+scriptableItemSetOverrides(scriptableItem_t *item, scriptableOverrides_t *overrides) {
+    item->overrides = overrides;
+}
+
 int
 scriptableItemSave (scriptableItem_t *item) {
-    if (!item->isReadonly && item->callbacks && item->callbacks->save) {
-        return item->callbacks->save (item);
+    if (!(scriptableItemFlags(item) & SCRIPTABLE_FLAG_IS_READONLY) && item->overrides && item->overrides->save) {
+        return item->overrides->save (item);
     }
     return 0;
 }
 
+int
+scriptableItemReset (scriptableItem_t *item) {
+    if (item->overrides && item->overrides->reset) {
+        return item->overrides->reset(item);
+    }
+    return -1;
+}
+
 char *
 scriptableItemSaveToString (scriptableItem_t *item) {
-    if (item->callbacks && item->callbacks->saveToString) {
-        return item->callbacks->saveToString (item);
+    if (item->overrides && item->overrides->saveToString) {
+        return item->overrides->saveToString (item);
     }
     return NULL;
 }
@@ -62,8 +98,8 @@ scriptableStringListFree (scriptableStringListItem_t *list) {
 
 void
 scriptableItemFree (scriptableItem_t *item) {
-    if (item->callbacks && item->callbacks->free) {
-        item->callbacks->free (item);
+    if (item->overrides && item->overrides->willDestroyItem) {
+        item->overrides->willDestroyItem (item);
     }
 
     scriptableKeyValue_t *p = item->properties;
@@ -81,6 +117,9 @@ scriptableItemFree (scriptableItem_t *item) {
         i = next;
     }
     item->children = NULL;
+
+    free (item->type);
+    free (item->configDialog);
 
     free (item);
 }
@@ -129,8 +168,10 @@ scriptableItemSubItemForName (scriptableItem_t *item, const char *name) {
 
 scriptableItem_t *
 scriptableItemCreateItemOfType (scriptableItem_t *item, const char *type) {
-    if (item->callbacks && item->callbacks->createItemOfType) {
-        return item->callbacks->createItemOfType (item, type);
+    if (item->overrides && item->overrides->createItemOfType) {
+        scriptableItem_t *result = item->overrides->createItemOfType (item, type);
+        result->type = strdup(type);
+        return result;
     }
     return NULL;
 }
@@ -160,12 +201,75 @@ scriptableItemClone (scriptableItem_t *item) {
         scriptableItem_t *clonedChild = scriptableItemClone(child);
         scriptableItemAddSubItem(cloned, clonedChild);
     }
-    cloned->callbacks = item->callbacks;
-    cloned->configDialog = item->configDialog;
+    cloned->overrides = item->overrides;
+    cloned->type = item->type ? strdup(item->type) : NULL;
+    cloned->configDialog = item->configDialog ? strdup(item->configDialog) : NULL;
 
     return cloned;
 }
 
+scriptableItem_t *
+scriptableItemParent(scriptableItem_t *item) {
+    return item->parent;
+}
+
+void scriptableItemPropertiesForEach(scriptableItem_t *item, int(^block)(const char *key, const char *value)) {
+    for (scriptableKeyValue_t *kv = item->properties; kv != NULL; kv = kv->next) {
+        if (!block(kv->key, kv->value)) {
+            break;
+        }
+    }
+}
+
+uint64_t scriptableItemFlags(scriptableItem_t *item) {
+    return item->flags;
+}
+void scriptableItemFlagsSet(scriptableItem_t *item, uint64_t flags) {
+    item->flags = flags;
+}
+
+void scriptableItemFlagsAdd(scriptableItem_t *item, uint64_t flags) {
+    item->flags |= flags;
+}
+void scriptableItemFlagsRemove(scriptableItem_t *item, uint64_t flags) {
+    item->flags &= ~flags;
+}
+
+const char *
+scriptableItemConfigDialog(scriptableItem_t *item) {
+    return item->configDialog;
+}
+
+void
+scriptableItemSetConfigDialog(scriptableItem_t *item, const char *configDialog) {
+    if (item->configDialog != NULL) {
+        free (item->configDialog);
+        item->configDialog = NULL;
+    }
+    if (configDialog != NULL) {
+        item->configDialog = strdup(configDialog);
+    }
+}
+
+
+const char *
+scriptableItemPasteboardIdentifier(scriptableItem_t *item) {
+    if (item->overrides == NULL || item->overrides->pasteboardItemIdentifier == NULL) {
+        return NULL;
+    }
+
+    return item->overrides->pasteboardItemIdentifier(item);
+}
+
+scriptableItem_t *
+scriptableItemChildren(scriptableItem_t *item) {
+    return item->children;
+}
+
+scriptableItem_t *
+scriptableItemNext(scriptableItem_t *item) {
+    return item->next;
+}
 
 void
 scriptableItemInsertSubItemAtIndex (scriptableItem_t *item, scriptableItem_t *subItem, unsigned int insertPosition) {
@@ -198,8 +302,8 @@ scriptableItemInsertSubItemAtIndex (scriptableItem_t *item, scriptableItem_t *su
 
 void
 scriptableItemRemoveSubItem (scriptableItem_t *item, scriptableItem_t *subItem) {
-    if (item->callbacks && item->callbacks->removeSubItem) {
-        item->callbacks->removeSubItem (item, subItem);
+    if (item->overrides && item->overrides->willRemoveChildItem) {
+        item->overrides->willRemoveChildItem (item, subItem);
     }
 
     scriptableItem_t *prev = NULL;
@@ -217,31 +321,32 @@ scriptableItemRemoveSubItem (scriptableItem_t *item, scriptableItem_t *subItem) 
             break;
         }
     }
+
+    scriptableItemUpdate(item);
+}
+
+static void
+scriptableItemDidUpdateChildItem (scriptableItem_t *item, scriptableItem_t *subItem) {
+    if (scriptableItemFlags(item) & SCRIPTABLE_FLAG_IS_LOADING) {
+        return;
+    }
+    if (item->overrides && item->overrides->didUpdateChildItem) {
+        item->overrides->didUpdateChildItem (item, subItem);
+    }
 }
 
 void
 scriptableItemUpdate (scriptableItem_t *item) {
-    if (item->isLoading) {
+    if (scriptableItemFlags(item) & SCRIPTABLE_FLAG_IS_LOADING) {
         return;
     }
-    if (item->callbacks && item->callbacks->updateItem) {
-        item->callbacks->updateItem (item);
+    if (item->overrides && item->overrides->didUpdateItem) {
+        item->overrides->didUpdateItem (item);
     }
     if (item->parent) {
-        scriptableItemUpdateForSubItem(item->parent, item);
+        scriptableItemDidUpdateChildItem(item->parent, item);
     }
 }
-
-void
-scriptableItemUpdateForSubItem (scriptableItem_t *item, scriptableItem_t *subItem) {
-    if (item->isLoading) {
-        return;
-    }
-    if (item->callbacks && item->callbacks->updateItemForSubItem) {
-        item->callbacks->updateItemForSubItem (item, subItem);
-    }
-}
-
 
 const char *
 scriptableItemPropertyValueForKey (scriptableItem_t *item, const char *key) {
@@ -255,15 +360,15 @@ scriptableItemPropertyValueForKey (scriptableItem_t *item, const char *key) {
 
 static void
 scriptableItemPropertyValueWillChangeForKey (scriptableItem_t *item, const char *key) {
-    if (!item->isLoading && item->callbacks && item->callbacks->propertyValueWillChangeForKey) {
-        item->callbacks->propertyValueWillChangeForKey (item, key);
+    if (!(scriptableItemFlags(item) & SCRIPTABLE_FLAG_IS_LOADING) && item->overrides && item->overrides->propertyValueWillChangeForKey) {
+        item->overrides->propertyValueWillChangeForKey (item, key);
     }
 }
 
 static void
 scriptableItemPropertyValueDidChangeForKey (scriptableItem_t *item, const char *key) {
-    if (!item->isLoading && item->callbacks && item->callbacks->propertyValueDidChangeForKey) {
-        item->callbacks->propertyValueDidChangeForKey (item, key);
+    if (!(scriptableItemFlags(item) & SCRIPTABLE_FLAG_IS_LOADING) && item->overrides && item->overrides->propertyValueDidChangeForKey) {
+        item->overrides->propertyValueDidChangeForKey (item, key);
     }
 }
 
@@ -339,24 +444,24 @@ scriptableItemContainsSubItemWithName (scriptableItem_t *item, const char *name)
 
 int
 scriptableItemIsSubItemNameAllowed (scriptableItem_t *item, const char *name) {
-    if (item->callbacks && item->callbacks->isSubItemNameAllowed) {
-        return item->callbacks->isSubItemNameAllowed (item, name);
+    if (item->overrides && item->overrides->isSubItemNameAllowed) {
+        return item->overrides->isSubItemNameAllowed (item, name);
     }
     return 1;
 }
 
 scriptableStringListItem_t *
 scriptableItemFactoryItemNames (struct scriptableItem_s *item) {
-    if (item->callbacks && item->callbacks->factoryItemNames) {
-        return item->callbacks->factoryItemNames (item);
+    if (item->overrides && item->overrides->factoryItemNames) {
+        return item->overrides->factoryItemNames (item);
     }
     return NULL;
 }
 
 scriptableStringListItem_t *
 scriptableItemFactoryItemTypes (struct scriptableItem_s *item) {
-    if (item->callbacks && item->callbacks->factoryItemTypes) {
-        return item->callbacks->factoryItemTypes (item);
+    if (item->overrides && item->overrides->factoryItemTypes) {
+        return item->overrides->factoryItemTypes (item);
     }
     return NULL;
 }
@@ -368,33 +473,41 @@ scriptableItemFormattedName (scriptableItem_t *item) {
         return NULL;
     }
 
-    if (!item->isReadonly || !item->callbacks || !item->callbacks->readonlyPrefix) {
+    if (!(scriptableItemFlags(item) & SCRIPTABLE_FLAG_IS_READONLY) || !item->overrides || !item->overrides->readonlyPrefix) {
         return strdup (name);
     }
 
-    size_t len = strlen (name) + strlen (item->callbacks->readonlyPrefix) + 1;
+    const char *prefix = item->overrides->readonlyPrefix(item);
+
+    if (prefix == NULL) {
+        return strdup (name);
+    }
+
+    size_t len = strlen (name) + strlen (prefix) + 1;
     char *buffer = calloc (1, len);
-    snprintf (buffer, len, "%s%s", item->callbacks->readonlyPrefix, name);
+    snprintf (buffer, len, "%s%s", prefix, name);
     return buffer;
 }
 
+
+static scriptableItem_t *_sharedRoot;
+
 void
-scriptableInit (void) {
-    rootNode = scriptableItemAlloc ();
+scriptableInitShared (void) {
+    if (_sharedRoot == NULL) {
+        _sharedRoot = scriptableItemAlloc();
+    }
 }
 
 void
-scriptableFree (void) {
-    if (rootNode) {
-        scriptableItemFree (rootNode);
-        rootNode = NULL;
+scriptableDeinitShared (void) {
+    if (_sharedRoot != NULL) {
+        scriptableItemFree(_sharedRoot);
+        _sharedRoot = NULL;
     }
 }
 
 scriptableItem_t *
-scriptableRoot (void) {
-    if (!rootNode) {
-        rootNode = scriptableItemAlloc();
-    }
-    return rootNode;
+scriptableRootShared(void) {
+    return _sharedRoot;
 }

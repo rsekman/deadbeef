@@ -11,10 +11,10 @@
 extern DB_functions_t *deadbeef;
 
 static scriptableStringListItem_t *
-scriptableEncoderChainItemNames (scriptableItem_t *item);
+scriptableEncoderItemNames (scriptableItem_t *item);
 
 static scriptableStringListItem_t *
-scriptableEncoderChainItemTypes (scriptableItem_t *item);
+scriptableEncoderItemTypes (scriptableItem_t *item);
 
 static scriptableItem_t *
 scriptableEncoderCreatePreset (scriptableItem_t *root, const char *type);
@@ -23,10 +23,10 @@ static int
 scriptableEncoderPresetSave(scriptableItem_t *item);
 
 static int
-scriptableEncoderUpdateItem (struct scriptableItem_s *item);
+scriptableEncoderUpdateItem (scriptableItem_t *item);
 
 static void
-scriptableEncoderPropertyValueWillChangeForKey (struct scriptableItem_s *item, const char *key);
+scriptableEncoderPropertyValueWillChangeForKey (scriptableItem_t *item, const char *key);
 
 static int
 scriptableEncoderDelete (scriptableItem_t *item);
@@ -34,19 +34,23 @@ scriptableEncoderDelete (scriptableItem_t *item);
 static int
 scriptableEncoderRootRemoveSubItem (scriptableItem_t *item, scriptableItem_t *subItem);
 
-static scriptableCallbacks_t scriptableEncoderCallbacks = {
-    .readonlyPrefix = "[Built-in] ",
+static const char *
+_readonlyPrefix(scriptableItem_t *item) {
+    return "[Built-in] ";
+}
+
+static scriptableOverrides_t scriptableEncoderCallbacks = {
+    .readonlyPrefix = _readonlyPrefix,
     .save = scriptableEncoderPresetSave,
-    .updateItem = scriptableEncoderUpdateItem,
+    .didUpdateItem = scriptableEncoderUpdateItem,
     .propertyValueWillChangeForKey = scriptableEncoderPropertyValueWillChangeForKey,
 };
 
-static scriptableCallbacks_t scriptableRootCallbacks = {
-    .allowRenaming = 1,
-    .factoryItemNames = scriptableEncoderChainItemNames,
-    .factoryItemTypes = scriptableEncoderChainItemTypes,
+static scriptableOverrides_t scriptableRootCallbacks = {
+    .factoryItemNames = scriptableEncoderItemNames,
+    .factoryItemTypes = scriptableEncoderItemTypes,
     .createItemOfType = scriptableEncoderCreatePreset,
-    .removeSubItem = scriptableEncoderRootRemoveSubItem,
+    .willRemoveChildItem = scriptableEncoderRootRemoveSubItem,
 };
 
 static int
@@ -77,14 +81,14 @@ static const char *configdialog =
 ;
 
 static scriptableStringListItem_t *
-scriptableEncoderChainItemNames (scriptableItem_t *item) {
+scriptableEncoderItemNames (scriptableItem_t *item) {
     scriptableStringListItem_t *s = scriptableStringListItemAlloc();
     s->str = strdup("EncoderPreset");
     return s;
 }
 
 static scriptableStringListItem_t *
-scriptableEncoderChainItemTypes (scriptableItem_t *item) {
+scriptableEncoderItemTypes (scriptableItem_t *item) {
     scriptableStringListItem_t *s = scriptableStringListItemAlloc();
     s->str = strdup("EncoderPreset");
     return s;
@@ -92,7 +96,7 @@ scriptableEncoderChainItemTypes (scriptableItem_t *item) {
 
 static scriptableItem_t *scriptableEncoderCreateBlankPreset(void) {
     scriptableItem_t *item = scriptableItemAlloc();
-    item->callbacks = &scriptableEncoderCallbacks;
+    scriptableItemSetOverrides (item, &scriptableEncoderCallbacks);
     return item;
 }
 
@@ -255,12 +259,12 @@ scriptableEncoderPresetSave(scriptableItem_t *item) {
 }
 
 static int
-scriptableEncoderUpdateItem (struct scriptableItem_s *item) {
+scriptableEncoderUpdateItem (scriptableItem_t *item) {
     return scriptableItemSave (item);
 }
 
 static void
-scriptableEncoderPropertyValueWillChangeForKey (struct scriptableItem_s *item, const char *key) {
+scriptableEncoderPropertyValueWillChangeForKey (scriptableItem_t *item, const char *key) {
     if (!strcmp (key, "name")) {
         // FIXME: this deletes the preset during rename.
         // If the next save operation fails - data loss will occur.
@@ -269,13 +273,14 @@ scriptableEncoderPropertyValueWillChangeForKey (struct scriptableItem_s *item, c
 }
 
 scriptableItem_t *
-scriptableEncoderRoot (void) {
-    scriptableItem_t *encoderRoot = scriptableItemSubItemForName (scriptableRoot(), "EncoderPresets");
+scriptableEncoderRoot (scriptableItem_t *scriptableRoot) {
+    scriptableItem_t *encoderRoot = scriptableItemSubItemForName (scriptableRoot, "Encoder Presets");
     if (!encoderRoot) {
         encoderRoot = scriptableItemAlloc();
-        encoderRoot->callbacks = &scriptableRootCallbacks;
-        scriptableItemSetPropertyValueForKey(encoderRoot, "EncoderPresets", "name");
-        scriptableItemAddSubItem(scriptableRoot(), encoderRoot);
+        scriptableItemFlagsSet(encoderRoot, SCRIPTABLE_FLAG_CAN_RENAME);
+        scriptableItemSetOverrides(encoderRoot, &scriptableRootCallbacks);
+        scriptableItemSetPropertyValueForKey(encoderRoot, "Encoder Presets", "name");
+        scriptableItemAddSubItem(scriptableRoot, encoderRoot);
     }
     return encoderRoot;
 }
@@ -306,9 +311,9 @@ scriptableEncoderRootRemoveSubItem (scriptableItem_t *item, scriptableItem_t *su
 }
 
 void
-scriptableEncoderLoadPresets (void) {
-    scriptableItem_t *root = scriptableEncoderRoot();
-    root->isLoading = 1;
+scriptableEncoderLoadPresets (scriptableItem_t *scriptableRoot) {
+    scriptableItem_t *root = scriptableEncoderRoot(scriptableRoot);
+    scriptableItemFlagsAdd(root, SCRIPTABLE_FLAG_IS_LOADING);
 
     char path[PATH_MAX];
     if (snprintf (path, sizeof (path), "%s/presets/encoders", deadbeef->get_system_dir (DDB_SYS_DIR_CONFIG)) < 0) {
@@ -334,18 +339,18 @@ scriptableEncoderLoadPresets (void) {
             if (snprintf (s, sizeof (s), "%s/%s", presetspath, namelist[i]->d_name) > 0){
 
                 scriptableItem_t *preset = scriptableEncoderCreateBlankPreset ();
-                preset->isLoading = 1;
-                preset->configDialog = configdialog;
+                scriptableItemFlagsAdd(preset, SCRIPTABLE_FLAG_IS_LOADING);
+                scriptableItemSetConfigDialog(preset, configdialog);
                 if (scriptableItemLoadEncoderPreset (preset, namelist[i]->d_name, s)) {
                     scriptableItemFree (preset);
                 }
                 else {
                     if (di == 0) {
-                        preset->isReadonly = 1;
+                        scriptableItemFlagsAdd(preset, SCRIPTABLE_FLAG_IS_READONLY);
                     }
                     scriptableItemAddSubItem(root, preset);
                 }
-                preset->isLoading = 0;
+                scriptableItemFlagsRemove(preset, SCRIPTABLE_FLAG_IS_LOADING);
             }
         }
         for (i = 0; i < n; i++) {
@@ -355,7 +360,7 @@ scriptableEncoderLoadPresets (void) {
         namelist = NULL;
     }
 
-    root->isLoading = 0;
+    scriptableItemFlagsRemove(root, SCRIPTABLE_FLAG_IS_LOADING);
 }
 
 static const char *

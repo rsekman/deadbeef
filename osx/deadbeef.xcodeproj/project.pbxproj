@@ -730,7 +730,7 @@
 		2D135EF0226E47AA00BAAE84 /* scriptable.c in Sources */ = {isa = PBXBuildFile; fileRef = 2D135EE8226E38AF00BAAE84 /* scriptable.c */; };
 		2D135EF1226E47AA00BAAE84 /* scriptable_dsp.h in Headers */ = {isa = PBXBuildFile; fileRef = 2D135EEB226E428C00BAAE84 /* scriptable_dsp.h */; };
 		2D135EF2226E47AA00BAAE84 /* scriptable_dsp.c in Sources */ = {isa = PBXBuildFile; fileRef = 2D135EEC226E428C00BAAE84 /* scriptable_dsp.c */; };
-		2D135EF4226E47CE00BAAE84 /* SciptableTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2D135EF3226E47CE00BAAE84 /* SciptableTests.mm */; };
+		2D135EF4226E47CE00BAAE84 /* ScriptableTests.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2D135EF3226E47CE00BAAE84 /* ScriptableTests.cpp */; };
 		2D135EFD226E4E1900BAAE84 /* scriptable_encoder.c in Sources */ = {isa = PBXBuildFile; fileRef = 2D135EFA226E4E1600BAAE84 /* scriptable_encoder.c */; };
 		2D135EFE226E511D00BAAE84 /* scriptable_encoder.h in Headers */ = {isa = PBXBuildFile; fileRef = 2D135EF9226E4E1600BAAE84 /* scriptable_encoder.h */; };
 		2D15721623785BD900985E47 /* VfsCurlTests.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2D15721523785BD900985E47 /* VfsCurlTests.cpp */; };
@@ -749,6 +749,7 @@
 		2D1E1DCD27B90051004DEF1D /* libavutil.56.dylib in Copy Plugins */ = {isa = PBXBuildFile; fileRef = 2DD376FD2739B854007AD315 /* libavutil.56.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		2D1E215724F9826C00E2895D /* MedialibItemDragDropHolder.h in Headers */ = {isa = PBXBuildFile; fileRef = 2D1E215524F9826C00E2895D /* MedialibItemDragDropHolder.h */; };
 		2D1E215824F9826C00E2895D /* MedialibItemDragDropHolder.m in Sources */ = {isa = PBXBuildFile; fileRef = 2D1E215624F9826C00E2895D /* MedialibItemDragDropHolder.m */; };
+		2D2092502A9A82E600CDBB2B /* libjansson.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 2DA84F7B24F58894003507A2 /* libjansson.dylib */; };
 		2D20D12423F099F4008ACBE6 /* NSImage+Additions.h in Headers */ = {isa = PBXBuildFile; fileRef = 2D20D12223F099F4008ACBE6 /* NSImage+Additions.h */; };
 		2D20D12523F099F4008ACBE6 /* NSImage+Additions.m in Sources */ = {isa = PBXBuildFile; fileRef = 2D20D12323F099F4008ACBE6 /* NSImage+Additions.m */; };
 		2D22F75919E13850009C631E /* csid.h in Headers */ = {isa = PBXBuildFile; fileRef = 2D22F6F719E137A6009C631E /* csid.h */; };
@@ -2010,6 +2011,16 @@
 		2DB1641B24FAB13400034E11 /* MediaLibraryManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 2DB1641924FAB13400034E11 /* MediaLibraryManager.m */; };
 		2DB2F73F240466AF00F7C000 /* PluginsPreferencesViewController.h in Headers */ = {isa = PBXBuildFile; fileRef = 2DB2F73D240466AF00F7C000 /* PluginsPreferencesViewController.h */; };
 		2DB2F740240466AF00F7C000 /* PluginsPreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 2DB2F73E240466AF00F7C000 /* PluginsPreferencesViewController.m */; };
+		2DB520E62AA8FADB00B6250A /* scriptable.c in Sources */ = {isa = PBXBuildFile; fileRef = 2D135EE8226E38AF00BAAE84 /* scriptable.c */; };
+		2DB520E72AA8FF0800B6250A /* scriptable_tfquery.c in Sources */ = {isa = PBXBuildFile; fileRef = 2D20924D2A9A077800CDBB2B /* scriptable_tfquery.c */; };
+		2DB521152AAC51F000B6250A /* scriptable.c in Sources */ = {isa = PBXBuildFile; fileRef = 2D135EE8226E38AF00BAAE84 /* scriptable.c */; };
+		2DB521162AAC51F000B6250A /* scriptable.c in Sources */ = {isa = PBXBuildFile; fileRef = 2D135EE8226E38AF00BAAE84 /* scriptable.c */; };
+		2DB521172AAC68C200B6250A /* scriptable.c in Sources */ = {isa = PBXBuildFile; fileRef = 2D135EE8226E38AF00BAAE84 /* scriptable.c */; };
+		2DB521182AAC692200B6250A /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4D1B51631837F60A003E6066 /* CoreAudio.framework */; };
+		2DB521192AAC694700B6250A /* scriptable_tfquery.c in Sources */ = {isa = PBXBuildFile; fileRef = 2D20924D2A9A077800CDBB2B /* scriptable_tfquery.c */; };
+		2DB5211A2AAC697100B6250A /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2D76DD3B24F6D693000EDA3E /* IOKit.framework */; };
+		2DB522FB2AACF14500B6250A /* gtkScriptableSelectViewController.c in Sources */ = {isa = PBXBuildFile; fileRef = 2DB522F82AACF09600B6250A /* gtkScriptableSelectViewController.c */; };
+		2DB522FC2AACF14500B6250A /* gtkScriptableSelectViewController.c in Sources */ = {isa = PBXBuildFile; fileRef = 2DB522F82AACF09600B6250A /* gtkScriptableSelectViewController.c */; };
 		2DB52F7C24CF7CF20046D516 /* TrackContextMenu.h in Headers */ = {isa = PBXBuildFile; fileRef = 2DB52F7A24CF7CF20046D516 /* TrackContextMenu.h */; };
 		2DB52F7D24CF7CF20046D516 /* TrackContextMenu.m in Sources */ = {isa = PBXBuildFile; fileRef = 2DB52F7B24CF7CF20046D516 /* TrackContextMenu.m */; };
 		2DB86E4F295CFFBA0011014C /* config.h in Headers */ = {isa = PBXBuildFile; fileRef = 2DB86E3F295CFFB90011014C /* config.h */; };
@@ -5293,7 +5304,7 @@
 		2D135EE8226E38AF00BAAE84 /* scriptable.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = scriptable.c; sourceTree = "<group>"; };
 		2D135EEB226E428C00BAAE84 /* scriptable_dsp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = scriptable_dsp.h; sourceTree = "<group>"; };
 		2D135EEC226E428C00BAAE84 /* scriptable_dsp.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = scriptable_dsp.c; sourceTree = "<group>"; };
-		2D135EF3226E47CE00BAAE84 /* SciptableTests.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = SciptableTests.mm; sourceTree = "<group>"; };
+		2D135EF3226E47CE00BAAE84 /* ScriptableTests.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ScriptableTests.cpp; sourceTree = "<group>"; };
 		2D135EF9226E4E1600BAAE84 /* scriptable_encoder.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = scriptable_encoder.h; sourceTree = "<group>"; };
 		2D135EFA226E4E1600BAAE84 /* scriptable_encoder.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = scriptable_encoder.c; sourceTree = "<group>"; };
 		2D15721523785BD900985E47 /* VfsCurlTests.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = VfsCurlTests.cpp; sourceTree = "<group>"; };
@@ -5308,6 +5319,8 @@
 		2D1E1D8527AD9B25004DEF1D /* buffered_file_writer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = buffered_file_writer.c; sourceTree = "<group>"; };
 		2D1E215524F9826C00E2895D /* MedialibItemDragDropHolder.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MedialibItemDragDropHolder.h; sourceTree = "<group>"; };
 		2D1E215624F9826C00E2895D /* MedialibItemDragDropHolder.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MedialibItemDragDropHolder.m; sourceTree = "<group>"; };
+		2D20924C2A9A077800CDBB2B /* scriptable_tfquery.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = scriptable_tfquery.h; sourceTree = "<group>"; };
+		2D20924D2A9A077800CDBB2B /* scriptable_tfquery.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = scriptable_tfquery.c; sourceTree = "<group>"; };
 		2D20D12223F099F4008ACBE6 /* NSImage+Additions.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NSImage+Additions.h"; sourceTree = "<group>"; };
 		2D20D12323F099F4008ACBE6 /* NSImage+Additions.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "NSImage+Additions.m"; sourceTree = "<group>"; };
 		2D22F6F719E137A6009C631E /* csid.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = csid.h; sourceTree = "<group>"; };
@@ -6567,6 +6580,8 @@
 		2DB1641924FAB13400034E11 /* MediaLibraryManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MediaLibraryManager.m; sourceTree = "<group>"; };
 		2DB2F73D240466AF00F7C000 /* PluginsPreferencesViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PluginsPreferencesViewController.h; sourceTree = "<group>"; };
 		2DB2F73E240466AF00F7C000 /* PluginsPreferencesViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PluginsPreferencesViewController.m; sourceTree = "<group>"; };
+		2DB522F72AACF09600B6250A /* gtkScriptableSelectViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = gtkScriptableSelectViewController.h; sourceTree = "<group>"; };
+		2DB522F82AACF09600B6250A /* gtkScriptableSelectViewController.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = gtkScriptableSelectViewController.c; sourceTree = "<group>"; };
 		2DB52F7A24CF7CF20046D516 /* TrackContextMenu.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TrackContextMenu.h; sourceTree = "<group>"; };
 		2DB52F7B24CF7CF20046D516 /* TrackContextMenu.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TrackContextMenu.m; sourceTree = "<group>"; };
 		2DB86E3F295CFFB90011014C /* config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = config.h; path = "deps/mpg123-1.31.1/ports/Xcode/config.h"; sourceTree = SOURCE_ROOT; };
@@ -7799,6 +7814,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2DB5211A2AAC697100B6250A /* IOKit.framework in Frameworks */,
+				2DB521182AAC692200B6250A /* CoreAudio.framework in Frameworks */,
 				2DC6C624294DE72D00A63CEB /* libgoogletest.dylib in Frameworks */,
 				2D6E2CFC26AC1617008FCD4B /* Accelerate.framework in Frameworks */,
 				2DAA4071269B63B5006D2754 /* libjansson.dylib in Frameworks */,
@@ -7922,6 +7939,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2D2092502A9A82E600CDBB2B /* libjansson.dylib in Frameworks */,
 				2DEE303529BC8F1000A293AD /* Quartz.framework in Frameworks */,
 				2DEE303329BC8EEC00A293AD /* Metal.framework in Frameworks */,
 				2DEE303129BC8ED900A293AD /* MediaPlayer.framework in Frameworks */,
@@ -9306,8 +9324,6 @@
 				2D135EEB226E428C00BAAE84 /* scriptable_dsp.h */,
 				2D135EFA226E4E1600BAAE84 /* scriptable_encoder.c */,
 				2D135EF9226E4E1600BAAE84 /* scriptable_encoder.h */,
-				2D135EE8226E38AF00BAAE84 /* scriptable.c */,
-				2D135EE7226E38AF00BAAE84 /* scriptable.h */,
 			);
 			path = scriptable;
 			sourceTree = "<group>";
@@ -10301,6 +10317,8 @@
 		2D887BC524B1C82A0078392F /* medialib */ = {
 			isa = PBXGroup;
 			children = (
+				2D20924D2A9A077800CDBB2B /* scriptable_tfquery.c */,
+				2D20924C2A9A077800CDBB2B /* scriptable_tfquery.h */,
 				2D887BC724B1C82A0078392F /* medialib.c */,
 				2D887BCD24B1C82A0078392F /* medialib.h */,
 				2D78C54327568A4D00F96F9D /* medialibcommon.c */,
@@ -10748,6 +10766,7 @@
 		2D92D1ED29B92DF900218F1D /* shared */ = {
 			isa = PBXGroup;
 			children = (
+				2DB520E52AA8FA4C00B6250A /* scriptable */,
 				2D92D21929B92DF900218F1D /* analyzer */,
 				2D92D1F629B92DF900218F1D /* scope */,
 				2D92D1FB29B92DF900218F1D /* README */,
@@ -11368,7 +11387,7 @@
 				4DC416FD2180919D0056133E /* PlaylistTests.cpp */,
 				4D31BECD1E9FB194001D1B89 /* ResamplerTests.cpp */,
 				2DA21F4C298680990077BD4C /* RingBufTests.cpp */,
-				2D135EF3226E47CE00BAAE84 /* SciptableTests.mm */,
+				2D135EF3226E47CE00BAAE84 /* ScriptableTests.cpp */,
 				2DA04EF123B6A81A0070AC01 /* ShellexecTests.cpp */,
 				2DA66EC71EDF4EF800E20989 /* StreamerTests.cpp */,
 				2D0F90C11CCFF094003FA197 /* TaggingTests.mm */,
@@ -11389,6 +11408,24 @@
 				2DAA4C0B1AAF88DE00519559 /* Info.plist */,
 			);
 			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		2DB520E52AA8FA4C00B6250A /* scriptable */ = {
+			isa = PBXGroup;
+			children = (
+				2D135EE8226E38AF00BAAE84 /* scriptable.c */,
+				2D135EE7226E38AF00BAAE84 /* scriptable.h */,
+			);
+			path = scriptable;
+			sourceTree = "<group>";
+		};
+		2DB522F62AACF08300B6250A /* scriptable */ = {
+			isa = PBXGroup;
+			children = (
+				2DB522F82AACF09600B6250A /* gtkScriptableSelectViewController.c */,
+				2DB522F72AACF09600B6250A /* gtkScriptableSelectViewController.h */,
+			);
+			path = scriptable;
 			sourceTree = "<group>";
 		};
 		2DB52F6A24CF7CB50046D516 /* TrackProperties */ = {
@@ -11820,6 +11857,7 @@
 		2DE3B5772269BB4300AFF9AE /* gtkui */ = {
 			isa = PBXGroup;
 			children = (
+				2DB522F62AACF08300B6250A /* scriptable */,
 				2D9793E0276E853E0062585E /* covermanager */,
 				2DCCCF7B26C43CE80034F4BB /* medialib */,
 				2DD81C2D25152D86008C716C /* pixmaps */,
@@ -16984,7 +17022,9 @@
 				2D78C54A27568AC500F96F9D /* medialibcommon.c in Sources */,
 				2D78C54927568AC500F96F9D /* medialibfilesystem_mac.c in Sources */,
 				2D78C56127568FFB00F96F9D /* medialibscanner.c in Sources */,
+				2DB520E62AA8FADB00B6250A /* scriptable.c in Sources */,
 				2D78C5622756915900F96F9D /* medialibtree.c in Sources */,
+				2DB520E72AA8FF0800B6250A /* scriptable_tfquery.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -17605,11 +17645,13 @@
 				2D78C55F27568F8600F96F9D /* medialibtree.c in Sources */,
 				2D78C55527568B0800F96F9D /* medialibsource.c in Sources */,
 				2DA66EC81EDF4EF800E20989 /* StreamerTests.cpp in Sources */,
-				2D135EF4226E47CE00BAAE84 /* SciptableTests.mm in Sources */,
+				2D135EF4226E47CE00BAAE84 /* ScriptableTests.cpp in Sources */,
 				2DA80C7426C0708200E8EC7F /* CuesheetTests.cpp in Sources */,
 				2DAA4C141AAF88FF00519559 /* TitleFormattingTests.cpp in Sources */,
+				2DB521192AAC694700B6250A /* scriptable_tfquery.c in Sources */,
 				2D4A9468223EFC6700199551 /* CoreAudioTests.m in Sources */,
 				4D31BECE1E9FB194001D1B89 /* ResamplerTests.cpp in Sources */,
+				2DB521172AAC68C200B6250A /* scriptable.c in Sources */,
 				2DBF3DC5270A101400023138 /* medialibstate.c in Sources */,
 				2D7F38031B2858AC00692A7B /* JunklibTests.cpp in Sources */,
 				4D0B0CEE20162D95004162DA /* FormatConversionTests.cpp in Sources */,
@@ -17648,6 +17690,7 @@
 				2D5C6AD62752B6930073632B /* plmenu.c in Sources */,
 				2DC6569E2744289C00583E14 /* rg.c in Sources */,
 				2DC6569F2744289C00583E14 /* utf8.c in Sources */,
+				2DB521162AAC51F000B6250A /* scriptable.c in Sources */,
 				2DC656A02744289C00583E14 /* gtkui_deletefromdisk.c in Sources */,
 				2D92D31E29B92F8D00218F1D /* deletefromdisk.c in Sources */,
 				2DC656A12744289C00583E14 /* fileman.c in Sources */,
@@ -17662,6 +17705,7 @@
 				2DC656AB2744289C00583E14 /* prefwin.c in Sources */,
 				2DC656AC2744289C00583E14 /* ddbseekbar.c in Sources */,
 				2DC656AE2744289C00583E14 /* support.c in Sources */,
+				2DB522FB2AACF14500B6250A /* gtkScriptableSelectViewController.c in Sources */,
 				2DC656AF2744289C00583E14 /* ddbtabstrip.c in Sources */,
 				2DC656B12744289C00583E14 /* clipboard.c in Sources */,
 				2DC656B22744289C00583E14 /* prefwinmisc.c in Sources */,
@@ -17744,6 +17788,7 @@
 				2D5C6AD72752B6930073632B /* plmenu.c in Sources */,
 				2DE3B7DF2269BF3100AFF9AE /* rg.c in Sources */,
 				2DE3B81E2269C0EA00AFF9AE /* utf8.c in Sources */,
+				2DB521152AAC51F000B6250A /* scriptable.c in Sources */,
 				2DA62BA626F3C8A800ED449A /* gtkui_deletefromdisk.c in Sources */,
 				2D92D32029B92F8D00218F1D /* deletefromdisk.c in Sources */,
 				2DE3B7FA2269BF3100AFF9AE /* fileman.c in Sources */,
@@ -17758,6 +17803,7 @@
 				2DE3B7D72269BF1700AFF9AE /* prefwin.c in Sources */,
 				2DE3B7DC2269BF1700AFF9AE /* ddbseekbar.c in Sources */,
 				2DE3B7E12269BF3100AFF9AE /* support.c in Sources */,
+				2DB522FC2AACF14500B6250A /* gtkScriptableSelectViewController.c in Sources */,
 				2DE3B7C62269BF1300AFF9AE /* ddbtabstrip.c in Sources */,
 				2DE3B7D22269BF1700AFF9AE /* clipboard.c in Sources */,
 				2D715C1326C836FE0022A8F0 /* prefwinmisc.c in Sources */,
@@ -19814,6 +19860,8 @@
 					"\"$(SRCROOT)/../include\"",
 					"\"$(SRCROOT)/..\"",
 					"\"$(SRCROOT)/../src\"",
+					"\"$(SRCROOT)/deps/jansson-2.13.1/src\"",
+					"\"$(SRCROOT)/../shared\"",
 				);
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -19862,6 +19910,8 @@
 					"\"$(SRCROOT)/../include\"",
 					"\"$(SRCROOT)/..\"",
 					"\"$(SRCROOT)/../src\"",
+					"\"$(SRCROOT)/deps/jansson-2.13.1/src\"",
+					"\"$(SRCROOT)/../shared\"",
 				);
 				MTL_ENABLE_DEBUG_INFO = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -20864,6 +20914,7 @@
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/deps/jansson-2.13.1/src\"",
+					"\"$(SRCROOT)/../shared\"",
 				);
 				MTL_ENABLE_DEBUG_INFO = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -20890,6 +20941,7 @@
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/deps/jansson-2.13.1/src\"",
+					"\"$(SRCROOT)/../shared\"",
 				);
 				MTL_ENABLE_DEBUG_INFO = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -20988,6 +21040,7 @@
 					"\"$(SRCROOT)/../include\"",
 					"\"$(SRCROOT)/..\"",
 					"\"$(SRCROOT)/../src\"",
+					"\"$(SRCROOT)/../shared\"",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/DeaDBeeF GTK3.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -21033,6 +21086,7 @@
 					"\"$(SRCROOT)/../include\"",
 					"\"$(SRCROOT)/..\"",
 					"\"$(SRCROOT)/../src\"",
+					"\"$(SRCROOT)/../shared\"",
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/DeaDBeeF GTK3.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -22271,6 +22325,7 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
 				CLANG_ENABLE_CODE_COVERAGE = YES;
 				CLANG_ENABLE_MODULES = YES;
+				CLANG_MODULES_AUTOLINK = NO;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEAD_CODE_STRIPPING = YES;
@@ -22292,6 +22347,7 @@
 					"$(SRCROOT)/../external/googletest/googletest/include",
 					"\"$(SRCROOT)/../include\"",
 					"\"$(SRCROOT)/..\"",
+					"\"$(SRCROOT)/../shared\"",
 				);
 				INFOPLIST_FILE = ../Tests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -22316,6 +22372,7 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
 				CLANG_ENABLE_CODE_COVERAGE = YES;
 				CLANG_ENABLE_MODULES = YES;
+				CLANG_MODULES_AUTOLINK = NO;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEAD_CODE_STRIPPING = YES;
@@ -22337,6 +22394,7 @@
 					"$(SRCROOT)/../external/googletest/googletest/include",
 					"\"$(SRCROOT)/../include\"",
 					"\"$(SRCROOT)/..\"",
+					"\"$(SRCROOT)/../shared\"",
 				);
 				INFOPLIST_FILE = ../Tests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -22488,6 +22546,7 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"\"$(SRCROOT)/deps/jansson-2.13.1/src\"",
 					"\"$(SRCROOT)/../include\"",
+					"\"$(SRCROOT)/../shared\"",
 				);
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -22551,6 +22610,7 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"\"$(SRCROOT)/deps/jansson-2.13.1/src\"",
 					"\"$(SRCROOT)/../include\"",
+					"\"$(SRCROOT)/../shared\"",
 				);
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -22602,6 +22662,7 @@
 					"\"$(SRCROOT)/../include\"",
 					"\"$(SRCROOT)/..\"",
 					"\"$(SRCROOT)/../src\"",
+					"\"$(SRCROOT)/../shared\"",
 				);
 				INFOPLIST_FILE = "DeaDBeeF GTK2.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -22648,6 +22709,7 @@
 					"\"$(SRCROOT)/../include\"",
 					"\"$(SRCROOT)/..\"",
 					"\"$(SRCROOT)/../src\"",
+					"\"$(SRCROOT)/../shared\"",
 				);
 				INFOPLIST_FILE = "DeaDBeeF GTK2.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -22809,6 +22871,7 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"\"$(SRCROOT)/deps/jansson-2.13.1/src\"",
 					"\"$(SRCROOT)/../include\"",
+					"\"$(SRCROOT)/../shared\"",
 				);
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -22872,6 +22935,7 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"\"$(SRCROOT)/deps/jansson-2.13.1/src\"",
 					"\"$(SRCROOT)/../include\"",
+					"\"$(SRCROOT)/../shared\"",
 				);
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -23528,6 +23592,7 @@
 					"OSX_APPBUNDLE=1",
 					"DISABLE_MM_KEY_GRABBER=1",
 					"_DEBUG=1",
+					"DDB_ENABLE_SCRIPTABLE=1",
 				);
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_TREAT_INCOMPATIBLE_POINTER_TYPE_WARNINGS_AS_ERRORS = YES;
@@ -23545,6 +23610,8 @@
 					"\"$(SRCROOT)/../include\"",
 					"\"$(SRCROOT)/..\"",
 					"\"$(SRCROOT)/../src\"",
+					"\"$(SRCROOT)/deps/jansson-2.13.1/src\"",
+					"\"$(SRCROOT)/../shared\"",
 				);
 				INFOPLIST_FILE = "../plugins/cocoaui/deadbeef-Info.plist";
 				LIBRARY_SEARCH_PATHS = (
@@ -23584,6 +23651,7 @@
 					"DOCDIR=\\\"donotuse\\\"",
 					"HAVE_LOG2=1",
 					"OSX_APPBUNDLE=1",
+					"DDB_ENABLE_SCRIPTABLE=1",
 				);
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_TREAT_INCOMPATIBLE_POINTER_TYPE_WARNINGS_AS_ERRORS = YES;
@@ -23601,6 +23669,8 @@
 					"\"$(SRCROOT)/../include\"",
 					"\"$(SRCROOT)/..\"",
 					"\"$(SRCROOT)/../src\"",
+					"\"$(SRCROOT)/deps/jansson-2.13.1/src\"",
+					"\"$(SRCROOT)/../shared\"",
 				);
 				INFOPLIST_FILE = "../plugins/cocoaui/deadbeef-Info.plist";
 				LIBRARY_SEARCH_PATHS = (

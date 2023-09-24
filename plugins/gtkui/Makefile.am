@@ -55,6 +55,7 @@ GTKUI_SOURCES = \
 	prefwin/prefwinplayback.c prefwin/prefwinplayback.h\
 	prefwin/prefwinplugins.c prefwin/prefwinplugins.h\
 	prefwin/prefwinsound.c prefwin/prefwinsound.h\
+	scriptable/gtkScriptableSelectViewController.c scriptable/gtkScriptableSelectViewController.h\
 	$(SM_SOURCES) $(OSXSRC)
 
 sdkdir = $(pkgincludedir)
@@ -92,9 +93,9 @@ GTKUI_SOURCES_GTK2 = $(GTKUI_SOURCES)
 ddb_gui_GTK2_la_SOURCES = $(GTKUI_SOURCES_GTK2)
 ddb_gui_GTK2_la_LDFLAGS = -module -avoid-version
 
-ddb_gui_GTK2_la_LIBADD = $(LDADD) $(GTK2_DEPS_LIBS) $(SM_LIBADD) ../libparser/libparser.la ../../shared/libtrkpropertiesutil.la ../../shared/libeqpreset.la ../../shared/libdeletefromdisk.la ../../shared/libtftintutil.la ../../shared/analyzer/libanalyzer.la ../../shared/scope/libscope.la $(JANSSON_LIBS) $(DISPATCH_LIBS)
+ddb_gui_GTK2_la_LIBADD = $(LDADD) $(GTK2_DEPS_LIBS) $(SM_LIBADD) ../libparser/libparser.la ../../shared/libtrkpropertiesutil.la ../../shared/libeqpreset.la ../../shared/libdeletefromdisk.la ../../shared/libtftintutil.la ../../shared/analyzer/libanalyzer.la ../../shared/scope/libscope.la ../../shared/scriptable/libscriptable.la $(JANSSON_LIBS) $(DISPATCH_LIBS)
 
-ddb_gui_GTK2_la_CFLAGS = -std=c99 -Werror -DGLIB_DISABLE_DEPRECATION_WARNINGS -DGDK_DISABLE_DEPRECATION_WARNINGS -DGTK_DISABLE_DEPRECATION_WARNINGS $(GTK2_DEPS_CFLAGS) $(SM_CFLAGS) $(JANSSON_CFLAGS) $(DISPATCH_CFLAGS) -I@top_srcdir@/include -DDDB_WARN_DEPRECATED=1
+ddb_gui_GTK2_la_CFLAGS = -std=c99 -Werror -DGLIB_DISABLE_DEPRECATION_WARNINGS -DGDK_DISABLE_DEPRECATION_WARNINGS -DGTK_DISABLE_DEPRECATION_WARNINGS $(GTK2_DEPS_CFLAGS) $(SM_CFLAGS) $(JANSSON_CFLAGS) $(DISPATCH_CFLAGS) -I@top_srcdir@/include -I@top_srcdir@/shared -DDDB_WARN_DEPRECATED=1
 
 endif
 
@@ -104,8 +105,8 @@ GTKUI_SOURCES_GTK3 = deadbeefapp.c deadbeefapp.h $(GTKUI_SOURCES)
 ddb_gui_GTK3_la_LDFLAGS = -module -avoid-version
 
 ddb_gui_GTK3_la_SOURCES = $(GTKUI_SOURCES_GTK3)
-ddb_gui_GTK3_la_LIBADD = $(LDADD) $(GTK3_DEPS_LIBS) $(SM_LIBADD) ../libparser/libparser.la ../../shared/libtrkpropertiesutil.la ../../shared/libeqpreset.la ../../shared/libdeletefromdisk.la ../../shared/libtftintutil.la ../../shared/analyzer/libanalyzer.la ../../shared/scope/libscope.la $(JANSSON_LIBS) $(DISPATCH_LIBS)
-ddb_gui_GTK3_la_CFLAGS = -std=c99 -Werror -DGLIB_DISABLE_DEPRECATION_WARNINGS -DGDK_DISABLE_DEPRECATION_WARNINGS -DGTK_DISABLE_DEPRECATION_WARNINGS $(GTK3_DEPS_CFLAGS) $(SM_CFLAGS) $(JANSSON_CFLAGS) $(DISPATCH_CFLAGS) -I@top_srcdir@/include -DDDB_WARN_DEPRECATED=1
+ddb_gui_GTK3_la_LIBADD = $(LDADD) $(GTK3_DEPS_LIBS) $(SM_LIBADD) ../libparser/libparser.la ../../shared/libtrkpropertiesutil.la ../../shared/libeqpreset.la ../../shared/libdeletefromdisk.la ../../shared/libtftintutil.la ../../shared/analyzer/libanalyzer.la ../../shared/scope/libscope.la ../../shared/scriptable/libscriptable.la $(JANSSON_LIBS) $(DISPATCH_LIBS)
+ddb_gui_GTK3_la_CFLAGS = -std=c99 -Werror -DGLIB_DISABLE_DEPRECATION_WARNINGS -DGDK_DISABLE_DEPRECATION_WARNINGS -DGTK_DISABLE_DEPRECATION_WARNINGS $(GTK3_DEPS_CFLAGS) $(SM_CFLAGS) $(JANSSON_CFLAGS) $(DISPATCH_CFLAGS) -I@top_srcdir@/include -I@top_srcdir@/shared -DDDB_WARN_DEPRECATED=1
 ddb_gui_GTK3_la_OBJCFLAGS = $(GTK3_DEPS_CFLAGS) $(SM_CFLAGS) $(JANSSON_CFLAGS)
 
 nodist_ddb_gui_GTK3_la_SOURCES = gtkui-gresources.c

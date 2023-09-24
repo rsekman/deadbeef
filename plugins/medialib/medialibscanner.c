@@ -21,10 +21,10 @@
     3. This notice may not be removed or altered from any source distribution.
 */
 
-#include <jansson.h>
 #include <limits.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <stdlib.h>
 #include "medialib.h"
 #include "medialibcommon.h"
 #include "medialibdb.h"

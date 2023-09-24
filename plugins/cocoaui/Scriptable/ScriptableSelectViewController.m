@@ -19,11 +19,6 @@
 
 @implementation ScriptableSelectViewController
 
-- (void)viewDidLoad {
-    [super viewDidLoad];
-    // Do view setup here.
-}
-
 - (void)setDataSource:(ScriptableTableDataSource *)dataSource {
     _dataSource = dataSource;
     [self reloadData];
@@ -49,10 +44,13 @@
 }
 
 - (void)reloadData {
+    if (self.dataSource == nil) {
+        return;
+    }
     NSInteger index = self.indexOfSelectedItem;
 
     [self.nameList removeAllItems];
-    for (scriptableItem_t *c = self.dataSource.scriptable->children; c; c = c->next) {
+    for (scriptableItem_t *c = scriptableItemChildren(self.dataSource.scriptable); c; c = scriptableItemNext(c)) {
         const char *name = scriptableItemPropertyValueForKey(c, "name");
         if (name) {
             [self.nameList addItemWithTitle:@(name)];

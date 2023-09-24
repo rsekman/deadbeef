@@ -7,6 +7,7 @@
 //
 
 #include <deadbeef/deadbeef.h>
+#include "scriptable/scriptable.h"
 #import "DdbShared.h"
 #import "medialib.h"
 #import "artwork.h"
@@ -21,7 +22,6 @@
 extern DB_functions_t *deadbeef;
 
 @interface MediaLibraryOutlineViewController() <NSOutlineViewDataSource,MediaLibraryOutlineViewDelegate,TrackContextMenuDelegate,TrackPropertiesWindowControllerDelegate> {
-    ddb_mediasource_list_selector_t *_selectors;
 }
 
 @property (nonatomic) MediaLibraryItem *medialibRootItem;
@@ -37,12 +37,11 @@ extern DB_functions_t *deadbeef;
 @property (nonatomic) NSPopUpButton *selectorPopup;
 
 @property (atomic) DB_mediasource_t *medialibPlugin;
-@property (atomic,readonly) ddb_mediasource_source_t medialibSource;
+@property (atomic,readonly) ddb_mediasource_source_t *medialibSource;
 @property (atomic) ddb_artwork_plugin_t *artworkPlugin;
 
 @property (nonatomic) ddb_medialib_item_t *medialibItemTree;
 
-@property (nonatomic) NSInteger lastSelectedIndex;
 @property (nonatomic) NSMutableArray<MediaLibraryItem *> *selectedItems;
 
 @property (nonatomic) TrackContextMenu *trackContextMenu;
@@ -50,26 +49,34 @@ extern DB_functions_t *deadbeef;
 
 @property (nonatomic) NSMutableDictionary<NSString *,NSImage *> *albumArtCache;
 
+@property (nonatomic) NSString *currentPreset;
+
 @end
 
 @implementation MediaLibraryOutlineViewController
 
-- (ddb_mediasource_source_t)medialibSource {
+- (MediaLibraryManager *)mediaLibraryManager {
     AppDelegate *appDelegate = NSApplication.sharedApplication.delegate;
-    return appDelegate.mediaLibraryManager.source;
+    return appDelegate.mediaLibraryManager;
+}
+
+- (ddb_mediasource_source_t *)medialibSource {
+    return self.mediaLibraryManager.source;
 }
 
 - (instancetype)init {
-    return [self initWithOutlineView:[NSOutlineView new] searchField:[NSSearchField new] selectorPopup:[NSPopUpButton new]];
+    return [self initWithOutlineView:[NSOutlineView new] searchField:[NSSearchField new]];
 }
 
-- (instancetype)initWithOutlineView:(NSOutlineView *)outlineView searchField:(NSSearchField *)searchField selectorPopup:(NSPopUpButton *)selectorPopup {
+- (instancetype)initWithOutlineView:(NSOutlineView *)outlineView searchField:(NSSearchField *)searchField {
     self = [super init];
     if (!self) {
         return nil;
     }
 
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(applicationWillQuit:) name:@"ApplicationWillQuit" object:nil];
+
+    self.currentPreset = self.mediaLibraryManager.preset;
 
     self.outlineView = outlineView;
     self.outlineView.dataSource = self;
@@ -80,12 +87,7 @@ extern DB_functions_t *deadbeef;
     self.searchField.target = self;
     self.searchField.action = @selector(searchFieldAction:);
 
-    self.selectorPopup = selectorPopup;
-    self.selectorPopup.action = @selector(filterSelectorChanged:);
-    self.selectorPopup.target = self;
-
     self.medialibPlugin = (DB_mediasource_t *)deadbeef->plug_get_for_id ("medialib");
-    _selectors = self.medialibPlugin->get_selectors_list (self.medialibSource);
     self.artworkPlugin = (ddb_artwork_plugin_t *)deadbeef->plug_get_for_id ("artwork2");
     self.listenerId = self.medialibPlugin->add_listener (self.medialibSource, _medialib_listener, (__bridge void *)self);
 
@@ -93,17 +95,7 @@ extern DB_functions_t *deadbeef;
     self.outlineView.menu = self.trackContextMenu;
     self.outlineView.menu.delegate = self;
 
-    [self.selectorPopup removeAllItems];
-
-    // populate the selector popup
-    for (int i = 0; _selectors[i]; i++) {
-        const char *name = self.medialibPlugin->selector_name (self.medialibSource, _selectors[i]);
-        [self.selectorPopup addItemWithTitle:@(name)];
-    }
-
-    [self.selectorPopup selectItemAtIndex:self.lastSelectedIndex];
-
-    [self initializeTreeView:0];
+    [self initializeTreeView];
 
     [self.outlineView expandItem:self.medialibRootItem];
 
@@ -127,10 +119,6 @@ extern DB_functions_t *deadbeef;
         self.medialibPlugin->remove_listener (self.medialibSource, self.listenerId);
         self.listenerId = -1;
     }
-    if (_selectors != NULL) {
-        self.medialibPlugin->free_selectors_list (self.medialibSource, _selectors);
-        _selectors = NULL;
-    }
     self.medialibPlugin = NULL;
     self.artworkPlugin = NULL;
 }
@@ -151,12 +139,24 @@ static void _medialib_listener (ddb_mediasource_event_type_t event, void *user_d
     });
 }
 
-- (void)initializeTreeView:(int)index {
+- (void)initializeTreeView {
     if (self.medialibItemTree) {
         self.medialibPlugin->free_item_tree (self.medialibSource, self.medialibItemTree);
         self.medialibItemTree = NULL;
     }
-    self.medialibItemTree = self.medialibPlugin->create_item_tree (self.medialibSource, _selectors[index], self.searchString ? self.searchString.UTF8String : NULL);
+
+    scriptableItem_t *tfQueryRoot =  self.medialibPlugin->get_queries_scriptable(self.medialibSource);
+
+    NSString *presetName = self.mediaLibraryManager.preset;
+    scriptableItem_t *preset = NULL;
+    if (presetName != nil) {
+        preset = scriptableItemSubItemForName(tfQueryRoot, presetName.UTF8String);
+    }
+    if (preset == NULL) {
+        preset = scriptableItemChildren(tfQueryRoot);
+    }
+
+    self.medialibItemTree = self.medialibPlugin->create_item_tree (self.medialibSource, preset, self.searchString ? self.searchString.UTF8String : NULL);
     self.medialibRootItem = [[MediaLibraryItem alloc] initWithItem:self.medialibItemTree];
 
     self.topLevelItems = @[
@@ -170,7 +170,7 @@ static void _medialib_listener (ddb_mediasource_event_type_t event, void *user_d
     __weak MediaLibraryOutlineViewController *weakSelf = self;
     dispatch_async(dispatch_get_main_queue(), ^{
         MediaLibraryOutlineViewController *strongSelf = weakSelf;
-        if (strongSelf == nil) {
+        if (strongSelf == nil || strongSelf.medialibPlugin == NULL) {
             return;
         }
         [self applyStoredState];
@@ -355,7 +355,7 @@ static void _medialib_listener (ddb_mediasource_event_type_t event, void *user_d
 }
 
 - (void)filterChanged {
-    [self initializeTreeView:(int)self.lastSelectedIndex];
+    [self initializeTreeView];
     [self.outlineView expandItem:self.medialibRootItem expandChildren:self.searchString!=nil];
 }
 
@@ -370,6 +370,16 @@ static void _medialib_listener (ddb_mediasource_event_type_t event, void *user_d
 }
 
 - (int)widgetMessage:(int)_id ctx:(uint64_t)ctx p1:(uint32_t)p1 p2:(uint32_t)p2 {
+
+    if (_id == DB_EV_CONFIGCHANGED) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            NSString *preset = self.mediaLibraryManager.preset;
+            if (![preset isEqualToString:self.currentPreset]) {
+                self.currentPreset = preset;
+                [self filterChanged];
+            }
+        });
+    }
     return 0;
 }
 
@@ -758,13 +768,6 @@ static void cover_get_callback (int error, ddb_cover_query_t *query, ddb_cover_i
         }
     }];
     return selectionIndexes;
-}
-
-#pragma mark - NSPopUpButton
-
-- (void)filterSelectorChanged:(NSPopUpButton *)sender {
-    self.lastSelectedIndex = self.selectorPopup.indexOfSelectedItem;
-    [self filterChanged];
 }
 
 #pragma mark - NSSearchField

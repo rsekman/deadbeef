@@ -34,6 +34,7 @@
 #include "medialibscanner.h"
 #include "medialibsource.h"
 #include "medialibtree.h"
+#include "scriptable_tfquery.h"
 
 static DB_functions_t *deadbeef;
 static DB_mediasource_t plugin;
@@ -41,6 +42,13 @@ static DB_mediasource_t plugin;
 static int
 ml_connect (void) {
     return 0;
+}
+
+static scriptableItem_t *_scriptableRoot;
+
+static scriptableItem_t *
+scriptableTFQueryRoot(void) {
+    return _scriptableRoot;
 }
 
 static int
@@ -51,6 +59,9 @@ ml_start (void) {
     ml_tree_init(deadbeef);
     ml_item_state_init(deadbeef);
 
+    _scriptableRoot = scriptableTFQueryRootCreate();
+    ml_scriptable_init(deadbeef, _scriptableRoot);
+
     return 0;
 }
 
@@ -58,6 +69,11 @@ static int
 ml_stop (void) {
     ml_scanner_free();
     ml_tree_free();
+    ml_scriptable_deinit();
+    if (_scriptableRoot != NULL) {
+        scriptableItemFree(_scriptableRoot);
+        _scriptableRoot = NULL;
+    }
 
     printf ("medialib cleanup done\n");
 
@@ -65,7 +81,7 @@ ml_stop (void) {
 }
 
 static int
-ml_add_listener (ddb_mediasource_source_t _source, ddb_medialib_listener_t listener, void *user_data) {
+ml_add_listener (ddb_mediasource_source_t *_source, ddb_medialib_listener_t listener, void *user_data) {
     medialib_source_t *source = (medialib_source_t *)_source;
 
     __block int result = -1;
@@ -83,7 +99,7 @@ ml_add_listener (ddb_mediasource_source_t _source, ddb_medialib_listener_t liste
 }
 
 static void
-ml_remove_listener (ddb_mediasource_source_t _source, int listener_id) {
+ml_remove_listener (ddb_mediasource_source_t *_source, int listener_id) {
     medialib_source_t *source = (medialib_source_t *)_source;
 
     dispatch_sync(source->sync_queue, ^{
@@ -94,7 +110,7 @@ ml_remove_listener (ddb_mediasource_source_t _source, int listener_id) {
 
 
 static ddb_medialib_item_t *
-ml_create_item_tree (ddb_mediasource_source_t _source, ddb_mediasource_list_selector_t selector, const char *filter) {
+ml_create_item_tree (ddb_mediasource_source_t *_source, scriptableItem_t *preset, const char *filter) {
     medialib_source_t *source = (medialib_source_t *)_source;
 
     __block ml_tree_item_t *root = NULL;
@@ -104,9 +120,7 @@ ml_create_item_tree (ddb_mediasource_source_t _source, ddb_mediasource_list_sele
             return;
         }
 
-        medialibSelector_t index = (medialibSelector_t)selector;
-
-        root = _create_item_tree_from_collection(filter, index, source);
+        root = _create_item_tree_from_collection(filter, preset, source);
     });
 
     return (ddb_medialib_item_t *)root;
@@ -115,7 +129,7 @@ ml_create_item_tree (ddb_mediasource_source_t _source, ddb_mediasource_list_sele
 #pragma mark - Select / Expand
 
 static int
-ml_is_tree_item_selected (ddb_mediasource_source_t _source, const ddb_medialib_item_t *_item) {
+ml_is_tree_item_selected (ddb_mediasource_source_t *_source, const ddb_medialib_item_t *_item) {
     medialib_source_t *source = (medialib_source_t *)_source;
     ml_tree_item_t *item = (ml_tree_item_t *)_item;
     const char *path = item->path;
@@ -127,7 +141,7 @@ ml_is_tree_item_selected (ddb_mediasource_source_t _source, const ddb_medialib_i
 }
 
 static void
-ml_set_tree_item_selected (ddb_mediasource_source_t _source, const ddb_medialib_item_t *_item, int selected) {
+ml_set_tree_item_selected (ddb_mediasource_source_t *_source, const ddb_medialib_item_t *_item, int selected) {
     medialib_source_t *source = (medialib_source_t *)_source;
     ml_tree_item_t *item = (ml_tree_item_t *)_item;
     const char *path = item->path;
@@ -143,7 +157,7 @@ ml_set_tree_item_selected (ddb_mediasource_source_t _source, const ddb_medialib_
 }
 
 static int
-ml_is_tree_item_expanded (ddb_mediasource_source_t _source, const ddb_medialib_item_t *_item) {
+ml_is_tree_item_expanded (ddb_mediasource_source_t *_source, const ddb_medialib_item_t *_item) {
     medialib_source_t *source = (medialib_source_t *)_source;
     ml_tree_item_t *item = (ml_tree_item_t *)_item;
     const char *path = item->path;
@@ -155,7 +169,7 @@ ml_is_tree_item_expanded (ddb_mediasource_source_t _source, const ddb_medialib_i
 }
 
 static void
-ml_set_tree_item_expanded (ddb_mediasource_source_t _source, const ddb_medialib_item_t *_item, int expanded) {
+ml_set_tree_item_expanded (ddb_mediasource_source_t *_source, const ddb_medialib_item_t *_item, int expanded) {
     medialib_source_t *source = (medialib_source_t *)_source;
     ml_tree_item_t *item = (ml_tree_item_t *)_item;
     const char *path = item->path;
@@ -223,7 +237,13 @@ ml_find_track (medialib_source_t *source, ddb_playItem_t *it) {
 }
 #endif
 
-static ddb_mediasource_state_t ml_scanner_state (ddb_mediasource_source_t _source) {
+static scriptableItem_t *
+ml_get_queries_scriptable(ddb_mediasource_source_t *_source) {
+    return scriptableTFQueryRoot();
+}
+
+static ddb_mediasource_state_t
+ml_scanner_state (ddb_mediasource_source_t *_source) {
     medialib_source_t *source = (medialib_source_t *)_source;
     return source->_ml_state;
 }
@@ -236,7 +256,7 @@ ml_message (uint32_t id, uintptr_t ctx, uint32_t p1, uint32_t p2) {
 #pragma mark - folder access
 
 static void
-ml_enable_saving(ddb_mediasource_source_t _source, int enable) {
+ml_enable_saving(ddb_mediasource_source_t *_source, int enable) {
     medialib_source_t *source = (medialib_source_t *)_source;
     dispatch_sync(source->sync_queue, ^{
         source->disable_file_operations = !enable;
@@ -244,7 +264,7 @@ ml_enable_saving(ddb_mediasource_source_t _source, int enable) {
 }
 
 static unsigned
-ml_folder_count (ddb_mediasource_source_t _source) {
+ml_folder_count (ddb_mediasource_source_t *_source) {
     medialib_source_t *source = (medialib_source_t *)_source;
     __block unsigned res = 0;
     dispatch_sync(source->sync_queue, ^{
@@ -254,7 +274,7 @@ ml_folder_count (ddb_mediasource_source_t _source) {
 }
 
 static void
-ml_folder_at_index (ddb_mediasource_source_t _source, int index, char *folder, size_t size) {
+ml_folder_at_index (ddb_mediasource_source_t *_source, int index, char *folder, size_t size) {
     medialib_source_t *source = (medialib_source_t *)_source;
     dispatch_sync(source->sync_queue, ^{
         json_t *data = json_array_get (source->musicpaths_json, index);
@@ -281,7 +301,7 @@ _save_folders_config (medialib_source_t *source) {
 }
 
 static void
-ml_set_folders (ddb_mediasource_source_t _source, const char **folders, size_t count) {
+ml_set_folders (ddb_mediasource_source_t *_source, const char **folders, size_t count) {
     medialib_source_t *source = (medialib_source_t *)_source;
     dispatch_sync(source->sync_queue, ^{
         if (!source->musicpaths_json) {
@@ -301,7 +321,7 @@ ml_set_folders (ddb_mediasource_source_t _source, const char **folders, size_t c
 
 #pragma mark - Access to configured music folders
 static char **
-ml_get_folders (ddb_mediasource_source_t _source, /* out */ size_t *_count) {
+ml_get_folders (ddb_mediasource_source_t *_source, /* out */ size_t *_count) {
     medialib_source_t *source = (medialib_source_t *)_source;
     __block char **folders = NULL;
     __block size_t count = 0;
@@ -321,7 +341,7 @@ ml_get_folders (ddb_mediasource_source_t _source, /* out */ size_t *_count) {
 }
 
 static void
-ml_free_folders (ddb_mediasource_source_t _source, char **folders, size_t count) {
+ml_free_folders (ddb_mediasource_source_t *_source, char **folders, size_t count) {
     for (int i = 0; i < count; i++) {
         free (folders[i]);
     }
@@ -331,7 +351,7 @@ ml_free_folders (ddb_mediasource_source_t _source, char **folders, size_t count)
 #pragma mark - Setting / changing music folders
 
 static void
-ml_insert_folder_at_index (ddb_mediasource_source_t _source, const char *folder, int index) {
+ml_insert_folder_at_index (ddb_mediasource_source_t *_source, const char *folder, int index) {
     medialib_source_t *source = (medialib_source_t *)_source;
     __block int notify = 0;
     dispatch_sync(source->sync_queue, ^{
@@ -349,7 +369,7 @@ ml_insert_folder_at_index (ddb_mediasource_source_t _source, const char *folder,
 }
 
 static void
-ml_remove_folder_at_index (ddb_mediasource_source_t _source, int index) {
+ml_remove_folder_at_index (ddb_mediasource_source_t *_source, int index) {
     medialib_source_t *source = (medialib_source_t *)_source;
     __block int notify = 0;
     dispatch_sync(source->sync_queue, ^{
@@ -365,7 +385,7 @@ ml_remove_folder_at_index (ddb_mediasource_source_t _source, int index) {
 }
 
 static void
-ml_append_folder (ddb_mediasource_source_t _source, const char *folder) {
+ml_append_folder (ddb_mediasource_source_t *_source, const char *folder) {
     medialib_source_t *source = (medialib_source_t *)_source;
     __block int notify = 0;
     dispatch_sync(source->sync_queue, ^{
@@ -476,17 +496,16 @@ static DB_mediasource_t plugin = {
     .set_source_enabled = ml_set_source_enabled,
     .is_source_enabled = ml_is_source_enabled,
     .refresh = ml_refresh,
-    .get_selectors_list = ml_get_selectors,
-    .free_selectors_list = ml_free_selectors,
-    .selector_name = ml_get_name_for_selector,
     .add_listener = ml_add_listener,
     .remove_listener = ml_remove_listener,
     .create_item_tree = ml_create_item_tree,
+    .get_tree_item_parent = ml_get_tree_item_parent,
     .is_tree_item_selected = ml_is_tree_item_selected,
     .set_tree_item_selected = ml_set_tree_item_selected,
     .is_tree_item_expanded = ml_is_tree_item_expanded,
     .set_tree_item_expanded = ml_set_tree_item_expanded,
     .free_item_tree = ml_free_list,
+    .get_queries_scriptable = ml_get_queries_scriptable,
     .scanner_state = ml_scanner_state,
     .tree_item_get_text = ml_tree_item_get_text,
     .tree_item_get_track = ml_tree_item_get_track,

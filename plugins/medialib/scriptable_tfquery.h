@@ -1,6 +1,6 @@
 /*
     DeaDBeeF -- the music player
-    Copyright (C) 2009-2021 Oleksiy Yakovenko and other contributors
+    Copyright (C) 2009-2023 Oleksiy Yakovenko and other contributors
 
     This software is provided 'as-is', without any express or implied
     warranty.  In no event will the authors be held liable for any damages
@@ -21,47 +21,22 @@
     3. This notice may not be removed or altered from any source distribution.
 */
 
-#ifndef medialibtree_h
-#define medialibtree_h
+#ifndef scriptable_tfquery_h
+#define scriptable_tfquery_h
 
-#include <stdint.h>
 #include <deadbeef/deadbeef.h>
 #include "scriptable/scriptable.h"
-#include "medialibdb.h"
 
-typedef struct ml_tree_item_s {
-    struct ml_tree_item_s *parent;
+scriptableItem_t *
+scriptableTFQueryRootCreate (void);
 
-    /// Path to the node in the tree
-    /// Can be NULL
-    /// Used as a unique identifier
-    const char *path;
-
-    // Display text
-    const char *text;
-
-    // The track associated with the node,
-    // expected to be NULL in non-leaf nodes
-    DB_playItem_t *track;
-
-    struct ml_tree_item_s *next;
-    struct ml_tree_item_s *children;
-    int num_children;
-} ml_tree_item_t;
+int
+scriptableTFQueryLoadPresets (scriptableItem_t *root);
 
 void
-ml_tree_init (DB_functions_t *deadbeef);
+ml_scriptable_init(DB_functions_t *_deadbeef, scriptableItem_t *root);
 
 void
-ml_tree_free (void);
+ml_scriptable_deinit(void);
 
-ddb_medialib_item_t *
-ml_get_tree_item_parent(ddb_medialib_item_t *item);
-
-ml_tree_item_t *
-_create_item_tree_from_collection(const char *filter, scriptableItem_t *preset, medialib_source_t *source);
-
-void
-ml_free_list (ddb_mediasource_source_t *source, ddb_medialib_item_t *list);
-
-#endif /* medialibtree_h */
+#endif /* scriptable_tfquery_h */

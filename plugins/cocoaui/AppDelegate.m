@@ -73,6 +73,8 @@ extern DB_functions_t *deadbeef;
 @property (weak) IBOutlet NSMenuItem *designModeMenuItem;
 @property DesignModeState *designModeState;
 
+
+
 @end
 
 @implementation AppDelegate
@@ -198,6 +200,7 @@ static int file_added (ddb_fileadd_data_t *data, void *user_data) {
 - (void)initMainWindow {
 #if ENABLE_MEDIALIB
     _mainWindow = [[MainWindowController alloc] initWithWindowNibName:@"SplitViewMainWindow"];
+    _mainWindow.mediaLibraryManager = self.mediaLibraryManager;
 #else
     _mainWindow = [[MainWindowController alloc] initWithWindowNibName:@"MainWindow"];
 #endif

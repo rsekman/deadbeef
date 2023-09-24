@@ -12,8 +12,8 @@ extern DB_functions_t *deadbeef;
 
 @interface MediaLibraryManager()
 
-@property (nonatomic) DB_mediasource_t *medialibPlugin;
-@property (nonatomic,readwrite) ddb_mediasource_source_t source;
+@property (nonatomic,readwrite) DB_mediasource_t *medialibPlugin;
+@property (nonatomic,readwrite) ddb_mediasource_source_t *source;
 
 @end
 
@@ -43,6 +43,17 @@ extern DB_functions_t *deadbeef;
         _source = NULL;
     }
     _medialibPlugin = NULL;
+}
+
+- (void)setPreset:(NSString *)preset {
+    deadbeef->conf_set_str("medialib.preset", preset.UTF8String);
+    deadbeef->sendmessage(DB_EV_CONFIGCHANGED, 0, 0, 0);
+}
+
+- (NSString *)preset {
+    char buffer[100];
+    deadbeef->conf_get_str("medialib.preset", "", buffer, sizeof(buffer));
+    return @(buffer);
 }
 
 @end
