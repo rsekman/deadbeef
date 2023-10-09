@@ -2593,27 +2593,13 @@ plt_reshuffle (playlist_t *playlist, playItem_t **ppmin, playItem_t **ppmax) {
     playItem_t *pmin = NULL;
     playItem_t *pmax = NULL;
     playItem_t *prev = NULL;
-    const char *alb = NULL;
-    const char *art = NULL;
-    const char *aa = NULL;
     for (playItem_t *it = playlist->head[PL_MAIN]; it; it = it->next[PL_MAIN]) {
-        const char *new_aa = NULL;
-        new_aa = pl_find_meta_raw (it, "band");
-        if (!new_aa) {
-            new_aa = pl_find_meta_raw (it, "album artist");
-        }
-        if (!new_aa) {
-            new_aa = pl_find_meta_raw (it, "albumartist");
-        }
-        if (streamer_get_shuffle () == DDB_SHUFFLE_ALBUMS && prev && alb == pl_find_meta_raw (it, "album") && ((aa && new_aa && aa == new_aa) || art == pl_find_meta_raw (it, "artist"))) {
+        if (streamer_get_shuffle () == DDB_SHUFFLE_ALBUMS && prev && pl_items_from_same_album(it, prev)) {
             it->shufflerating = prev->shufflerating;
         }
         else {
             prev = it;
             it->shufflerating = rand ();
-            alb = pl_find_meta_raw (it, "album");
-            art = pl_find_meta_raw (it, "artist");
-            aa = new_aa;
         }
         if (!pmin || it->shufflerating < pmin->shufflerating) {
             pmin = it;
@@ -4125,31 +4111,6 @@ plt_is_loading_cue (playlist_t *plt) {
 }
 
 int
-pl_items_from_same_album(playItem_t* a, playItem_t* b){
-    const char *keys[] = {
-        "band",
-        "album artist",
-        "albumartist",
-        "artist",
-        NULL
-    };
-
-    const char *a_artist = NULL;
-    const char *b_artist = NULL;
-    for (int i = 0; keys[i]; i++) {
-        if (!a_artist) {
-            a_artist = pl_find_meta_raw (a, keys[i]);
-        }
-        if (!b_artist) {
-            b_artist = pl_find_meta_raw (b, keys[i]);
-        }
-        if (a_artist && b_artist) {
-            break;
-        }
-    }
-    return pl_find_meta_raw(a, "album") == pl_find_meta_raw (b, "album") && a_artist == b_artist;
-}
-int
 pl_get_played(playItem_t *it) {
     pl_lock();
     int ret = it->played;
@@ -4177,4 +4138,30 @@ pl_set_shufflerating (playItem_t *it, int rating) {
     pl_lock();
     it->shufflerating = rating;
     pl_unlock();
+}
+
+int
+pl_items_from_same_album (playItem_t* a, playItem_t* b){
+    const char *keys[] = {
+        "band",
+        "album artist",
+        "albumartist",
+        "artist",
+        NULL
+    };
+
+    const char *a_artist = NULL;
+    const char *b_artist = NULL;
+    for (int i = 0; keys[i]; i++) {
+        if (!a_artist) {
+            a_artist = pl_find_meta_raw (a, keys[i]);
+        }
+        if (!b_artist) {
+            b_artist = pl_find_meta_raw (b, keys[i]);
+        }
+        if (a_artist && b_artist) {
+            break;
+        }
+    }
+    return pl_find_meta_raw(a, "album") == pl_find_meta_raw (b, "album") && a_artist == b_artist;
 }

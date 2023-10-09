@@ -80,6 +80,14 @@ streamer_get_current_track_to_play (playlist_t *plt);
 playItem_t *
 streamer_get_next_track_with_direction (int dir, ddb_shuffle_t shuffle, ddb_repeat_t repeat);
 
+// returns the first track of the next album according to repeat and shuffle settings, with specified direction
+// if direction is -1 returns
+// - the first track of the current album, if the current track is not the first of the album
+// - the first track of the previous album, if the current track is the first of the album
+// this mimics pressing back once to go to the beginning of the track and twice to go to the previous track
+playItem_t *
+streamer_get_next_album_with_direction (int dir, ddb_shuffle_t shuffle, ddb_repeat_t repeat);
+
 void
 streamer_set_last_played (playItem_t *track);
 
