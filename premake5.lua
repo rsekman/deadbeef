@@ -327,11 +327,14 @@ project "dca_plugin"
   targetname "dca"
   files {
     "plugins/dca/dcaplug.c",
-    "plugins/dca/extract_dca.c",
-    "plugins/dca/gettimeofday.c",
-    "plugins/dca/parse.c",
-    "plugins/dca/bitstream.c",
-    "plugins/dca/downmix.c"
+    "plugins/dca/libdca/extract_dca.c",
+    "plugins/dca/libdca/gettimeofday.c",
+    "plugins/dca/libdca/parse.c",
+    "plugins/dca/libdca/bitstream.c",
+    "plugins/dca/libdca/downmix.c"
+  }
+  includedirs {
+    "plugins/dca/libdca"
   }
 end
 
@@ -582,36 +585,36 @@ project "sc68_plugin"
   targetname "in_sc68"
   files {
     "plugins/sc68/in_sc68.c",
-    "plugins/sc68/file68/src/*.c",
-    "plugins/sc68/libsc68/dial68/*.c",
-    "plugins/sc68/unice68/unice68_unpack.c",
-    "plugins/sc68/unice68/unice68_pack.c",
-    "plugins/sc68/unice68/unice68_version.c",
-    "plugins/sc68/libsc68/conf68.c",
-    "plugins/sc68/libsc68/api68.c",
-    "plugins/sc68/libsc68/mixer68.c",
-    "plugins/sc68/libsc68/io68/*.c",
-    "plugins/sc68/libsc68/libsc68.c",
-    "plugins/sc68/libsc68/emu68/lines68.c",
-    "plugins/sc68/libsc68/emu68/ioplug68.c",
-    "plugins/sc68/libsc68/emu68/mem68.c",
-    "plugins/sc68/libsc68/emu68/getea68.c",
-    "plugins/sc68/libsc68/emu68/inst68.c",
-    "plugins/sc68/libsc68/emu68/emu68.c",
-    "plugins/sc68/libsc68/emu68/error68.c",
-    "plugins/sc68/desa68/desa68.c"
+    "plugins/sc68/libsc68/file68/src/*.c",
+    "plugins/sc68/libsc68/libsc68/dial68/*.c",
+    "plugins/sc68/libsc68/unice68/unice68_unpack.c",
+    "plugins/sc68/libsc68/unice68/unice68_pack.c",
+    "plugins/sc68/libsc68/unice68/unice68_version.c",
+    "plugins/sc68/libsc68/libsc68/conf68.c",
+    "plugins/sc68/libsc68/libsc68/api68.c",
+    "plugins/sc68/libsc68/libsc68/mixer68.c",
+    "plugins/sc68/libsc68/libsc68/io68/*.c",
+    "plugins/sc68/libsc68/libsc68/libsc68.c",
+    "plugins/sc68/libsc68/libsc68/emu68/lines68.c",
+    "plugins/sc68/libsc68/libsc68/emu68/ioplug68.c",
+    "plugins/sc68/libsc68/libsc68/emu68/mem68.c",
+    "plugins/sc68/libsc68/libsc68/emu68/getea68.c",
+    "plugins/sc68/libsc68/libsc68/emu68/inst68.c",
+    "plugins/sc68/libsc68/libsc68/emu68/emu68.c",
+    "plugins/sc68/libsc68/libsc68/emu68/error68.c",
+    "plugins/sc68/libsc68/desa68/desa68.c"
   }
   excludes {
-    "plugins/sc68/libsc68/io68/ym_atarist_table.c",
-    "plugins/sc68/libsc68/io68/ym_linear_table.c"
+    "plugins/sc68/libsc68/libsc68/io68/ym_atarist_table.c",
+    "plugins/sc68/libsc68/libsc68/io68/ym_linear_table.c"
   }
   includedirs {
-    "plugins/sc68/file68",
-    "plugins/sc68/file68/sc68",
-    "plugins/sc68/unice68",
-    "plugins/sc68/libsc68",
-    "plugins/sc68/libsc68/sc68",
-    "plugins/sc68/libsc68/emu68"
+    "plugins/sc68/libsc68/file68",
+    "plugins/sc68/libsc68/file68/sc68",
+    "plugins/sc68/libsc68/unice68",
+    "plugins/sc68/libsc68/libsc68",
+    "plugins/sc68/libsc68/libsc68/sc68",
+    "plugins/sc68/libsc68/libsc68/emu68"
   }
   buildoptions {"-include stdint.h"}
   defines {
@@ -653,19 +656,20 @@ if option ("plugin-shn") then
 project "shn_plugin"
   targetname "ddb_shn"
   files {
-    "plugins/shn/array.c",
-    "plugins/shn/convert.c",
-    "plugins/shn/misc.c",
-    "plugins/shn/output.c",
-    "plugins/shn/seek.c",
-    "plugins/shn/shn.c",
-    "plugins/shn/shn.h",
-    "plugins/shn/shorten.c",
-    "plugins/shn/sulawalaw.c",
-    "plugins/shn/vario.c",
-    "plugins/shn/wave.c"
+    "plugins/shn/shnplugin.c",
+    "plugins/shn/libshn/array.c",
+    "plugins/shn/libshn/convert.c",
+    "plugins/shn/libshn/misc.c",
+    "plugins/shn/libshn/output.c",
+    "plugins/shn/libshn/seek.c",
+    "plugins/shn/libshn/shn.h",
+    "plugins/shn/libshn/shorten.c",
+    "plugins/shn/libshn/sulawalaw.c",
+    "plugins/shn/libshn/vario.c",
+    "plugins/shn/libshn/wave.c"
   }
   buildoptions {"-include stdint.h"}
+  includedirs {"plugins/shn/libshn"}
   links {"m"}
 end
 
@@ -681,10 +685,11 @@ if option ("plugin-vtx") then
 project "vtx"
   files {
     "plugins/vtx/vtx.c",
-    "plugins/vtx/ay8912.c",
-    "plugins/vtx/lh5dec.c",
-    "plugins/vtx/vtxfile.c"
+    "plugins/vtx/libayemu/ay8912.c",
+    "plugins/vtx/libayemu/lh5dec.c",
+    "plugins/vtx/libayemu/vtxfile.c"
   }
+  includedirs {"plugins/vtx/libayemu"}
   undefines {"VERSION"}
 end
 
@@ -954,47 +959,47 @@ end
 if option ("plugin-psf", "zlib") then
 project "psf"
   includedirs {
-    "plugins/psf",
-    "plugins/psf/eng_ssf",
-    "plugins/psf/eng_qsf",
-    "plugins/psf/eng_dsf"
+    "plugins/psf/aosdk",
+    "plugins/psf/aosdk/eng_ssf",
+    "plugins/psf/aosdk/eng_qsf",
+    "plugins/psf/aosdk/eng_dsf"
   }
   defines {
     "HAS_PSXCPU=1"
   }
   files {
     "plugins/psf/plugin.c",
-    "plugins/psf/psfmain.c",
-    "plugins/psf/corlett.c",
-    "plugins/psf/eng_dsf/eng_dsf.c",
-    "plugins/psf/eng_dsf/dc_hw.c",
-    "plugins/psf/eng_dsf/aica.c",
-    "plugins/psf/eng_dsf/aicadsp.c",
-    "plugins/psf/eng_dsf/arm7.c",
-    "plugins/psf/eng_dsf/arm7i.c",
-    "plugins/psf/eng_ssf/m68kcpu.c",
-    "plugins/psf/eng_ssf/m68kopac.c",
-    "plugins/psf/eng_ssf/m68kopdm.c",
-    "plugins/psf/eng_ssf/m68kopnz.c",
-    "plugins/psf/eng_ssf/m68kops.c",
-    "plugins/psf/eng_ssf/scsp.c",
-    "plugins/psf/eng_ssf/scspdsp.c",
-    "plugins/psf/eng_ssf/sat_hw.c",
-    "plugins/psf/eng_ssf/eng_ssf.c",
-    "plugins/psf/eng_qsf/eng_qsf.c",
-    "plugins/psf/eng_qsf/kabuki.c",
-    "plugins/psf/eng_qsf/qsound.c",
-    "plugins/psf/eng_qsf/z80.c",
-    "plugins/psf/eng_qsf/z80dasm.c",
-    "plugins/psf/eng_psf/eng_psf.c",
-    "plugins/psf/eng_psf/psx.c",
-    "plugins/psf/eng_psf/psx_hw.c",
-    "plugins/psf/eng_psf/peops/spu.c",
-    "plugins/psf/eng_psf/eng_psf2.c",
-    "plugins/psf/eng_psf/peops2/spu2.c",
-    "plugins/psf/eng_psf/peops2/dma2.c",
-    "plugins/psf/eng_psf/peops2/registers2.c",
-    "plugins/psf/eng_psf/eng_spu.c",
+    "plugins/psf/aosdk/psfmain.c",
+    "plugins/psf/aosdk/corlett.c",
+    "plugins/psf/aosdk/eng_dsf/eng_dsf.c",
+    "plugins/psf/aosdk/eng_dsf/dc_hw.c",
+    "plugins/psf/aosdk/eng_dsf/aica.c",
+    "plugins/psf/aosdk/eng_dsf/aicadsp.c",
+    "plugins/psf/aosdk/eng_dsf/arm7.c",
+    "plugins/psf/aosdk/eng_dsf/arm7i.c",
+    "plugins/psf/aosdk/eng_ssf/m68kcpu.c",
+    "plugins/psf/aosdk/eng_ssf/m68kopac.c",
+    "plugins/psf/aosdk/eng_ssf/m68kopdm.c",
+    "plugins/psf/aosdk/eng_ssf/m68kopnz.c",
+    "plugins/psf/aosdk/eng_ssf/m68kops.c",
+    "plugins/psf/aosdk/eng_ssf/scsp.c",
+    "plugins/psf/aosdk/eng_ssf/scspdsp.c",
+    "plugins/psf/aosdk/eng_ssf/sat_hw.c",
+    "plugins/psf/aosdk/eng_ssf/eng_ssf.c",
+    "plugins/psf/aosdk/eng_qsf/eng_qsf.c",
+    "plugins/psf/aosdk/eng_qsf/kabuki.c",
+    "plugins/psf/aosdk/eng_qsf/qsound.c",
+    "plugins/psf/aosdk/eng_qsf/z80.c",
+    "plugins/psf/aosdk/eng_qsf/z80dasm.c",
+    "plugins/psf/aosdk/eng_psf/eng_psf.c",
+    "plugins/psf/aosdk/eng_psf/psx.c",
+    "plugins/psf/aosdk/eng_psf/psx_hw.c",
+    "plugins/psf/aosdk/eng_psf/peops/spu.c",
+    "plugins/psf/aosdk/eng_psf/eng_psf2.c",
+    "plugins/psf/aosdk/eng_psf/peops2/spu2.c",
+    "plugins/psf/aosdk/eng_psf/peops2/dma2.c",
+    "plugins/psf/aosdk/eng_psf/peops2/registers2.c",
+    "plugins/psf/aosdk/eng_psf/eng_spu.c",
   }
   links {"z", "m"}
 end
@@ -1143,8 +1148,10 @@ project "supereq_plugin"
   targetname "supereq"
   files {
     "plugins/supereq/*.c",
-    "plugins/supereq/*.cpp"
+    "plugins/supereq/libsupereq/*.cpp",
+    "plugins/supereq/libsupereq/*.c"
   }
+  includedirs {"plugins/supereq/libsupereq"}
   defines {"USE_OOURA"}
   links {"m", "stdc++"}
 end
@@ -1187,8 +1194,9 @@ if option ("plugin-tta") then
 project "tta"
   files {
     "plugins/tta/ttaplug.c",
-    "plugins/tta/ttadec.c"
+    "plugins/tta/libtta/ttadec.c"
   }
+  includedirs { "plugins/tta/libtta" }
 end
 
 if option ("plugin-libretro") then
@@ -1199,6 +1207,28 @@ project "ddb_dsp_libretro"
   buildoptions {
     "-msse3"
   }
+end
+
+if option ("plugin-medialib") then
+project "medialib"
+  files {
+    "plugins/medialib/medialib.c",
+    "plugins/medialib/medialibcommon.c",
+    "plugins/medialib/medialibdb.c",
+    "plugins/medialib/medialibfilesystem_stub.c",
+    "plugins/medialib/medialibscanner.c",
+    "plugins/medialib/medialibsource.c",
+    "plugins/medialib/medialibstate.c",
+    "plugins/medialib/medialibtree.c",
+    "plugins/medialib/scriptable_tfquery.c",
+    "shared/scriptable/scriptable.c"
+  }
+  includedirs {
+    "shared"
+  }
+  pkgconfig ("jansson")
+  buildoptions {"-fblocks"}
+  links {"dispatch", "BlocksRuntime"}
 end
 
 project "translations"

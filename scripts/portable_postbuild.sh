@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e
+set -x
 VERSION=`cat PORTABLE_VERSION | perl -ne 'chomp and print'`
 OSTYPE=`uname -s`
 if [[ "$ARCH" == "i686" ]]; then
@@ -46,7 +48,7 @@ for i in nullout cdda flac alsa mp3 hotkeys vtx \
      supereq gme dumb notify musepack wildmidi \
      tta dca aac mms shn psf shellexec vfs_zip \
      m3u converter pulse dsp_libsrc mono2stereo \
-     wma rg_scanner soundtouch artwork\
+     wma rg_scanner soundtouch artwork medialib\
      ; do
     if [ -f ./plugins/$i/.libs/$i.so ]; then
         cp ./plugins/$i/.libs/$i.so $PLUGDIR/
@@ -94,12 +96,11 @@ cp -r plugins/converter/convpresets $OUTDIR/plugins/
 # sc68data
 cp -r plugins/sc68/.libs/in_sc68.so $OUTDIR/plugins/
 mkdir -p  $OUTDIR/plugins/data68/Replay
-cp -r plugins/sc68/file68/data68/Replay/*.bin $OUTDIR/plugins/data68/Replay/
+cp -r plugins/sc68/libsc68/file68/data68/Replay/*.bin $OUTDIR/plugins/data68/Replay/
 
 # dynamic libs
 mkdir -p $OUTDIR/lib
 cp -r static-deps/lib-x86-64/lib/libBlocksRuntime.so* $OUTDIR/lib/
-cp -r static-deps/lib-x86-64/lib/libkqueue.so* $OUTDIR/lib/
 cp -r static-deps/lib-x86-64/lib/libdispatch.so* $OUTDIR/lib/
 cp -r static-deps/lib-x86-64/lib/libcurl.so* $OUTDIR/lib/
 cp -r static-deps/lib-x86-64/lib/libmbed*.so* $OUTDIR/lib/

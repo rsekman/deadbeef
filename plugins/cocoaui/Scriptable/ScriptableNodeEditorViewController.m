@@ -289,7 +289,17 @@
 }
 
 - (BOOL)configureEnabled {
-    return [self selectedItem] != NULL;
+    scriptableItem_t *selectedItem = [self selectedItem];
+    if (selectedItem == NULL) {
+        return NO;
+    }
+
+    if (!(scriptableItemFlags(selectedItem) & SCRIPTABLE_FLAG_IS_LIST)
+        && scriptableItemConfigDialog(selectedItem) == NULL) {
+        return NO;
+    }
+
+    return YES;
 }
 
 - (BOOL)duplicateEnabled {
@@ -352,7 +362,8 @@
             return; // name unchanged
         }
 
-        if (scriptableItemContainsSubItemWithName (scriptableItemParent(item), value)) {
+        if (!(scriptableItemFlags(scriptableItemParent(item)) & SCRIPTABLE_FLAG_ALLOW_NON_UNIQUE_KEYS)
+            && scriptableItemContainsSubItemWithName (scriptableItemParent(item), value)) {
             [self.errorViewer scriptableErrorViewer:self duplicateNameErrorForItem:item];
             [textField becomeFirstResponder];
         }

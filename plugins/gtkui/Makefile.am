@@ -38,6 +38,9 @@ GTKUI_SOURCES = \
     namedicons.c namedicons.h\
     pltmenu.c\
     tfimport.c tfimport.h\
+	medialib/medialibwidget.c medialib/medialibwidget.h\
+	medialib/medialibmanager.c medialib/medialibmanager.h\
+	medialib/mlcellrendererpixbuf.c medialib/mlcellrendererpixbuf.h\
 	covermanager/covermanager.c covermanager/covermanager.h\
 	covermanager/gobjcache.c covermanager/gobjcache.h\
 	covermanager/albumartwidget.c covermanager/albumartwidget.h\
@@ -50,12 +53,17 @@ GTKUI_SOURCES = \
 	playlist/searchplaylist.c playlist/searchplaylist.h\
 	prefwin/prefwin.c prefwin/prefwin.h\
 	prefwin/prefwinappearance.c prefwin/prefwinappearance.h\
+	prefwin/prefwinmedialib.c prefwin/prefwinmedialib.h\
 	prefwin/prefwinmisc.c prefwin/prefwinmisc.h\
 	prefwin/prefwinnetwork.c prefwin/prefwinnetwork.h\
 	prefwin/prefwinplayback.c prefwin/prefwinplayback.h\
 	prefwin/prefwinplugins.c prefwin/prefwinplugins.h\
 	prefwin/prefwinsound.c prefwin/prefwinsound.h\
-	scriptable/gtkScriptableSelectViewController.c scriptable/gtkScriptableSelectViewController.h\
+	scriptable/gtkScriptable.c scriptable/gtkScriptable.h\
+	scriptable/gtkScriptableListEditViewController.c scriptable/gtkScriptableListEditViewController.h\
+	scriptable/gtkScriptableListEditWindowController.c scriptable/gtkScriptableListEditWindowController.h\
+	scriptable/gtkScriptableSelectViewController.c scriptable/gtkScriptableSelectViewController.h
+
 	$(SM_SOURCES) $(OSXSRC)
 
 sdkdir = $(pkgincludedir)
@@ -95,7 +103,7 @@ ddb_gui_GTK2_la_LDFLAGS = -module -avoid-version
 
 ddb_gui_GTK2_la_LIBADD = $(LDADD) $(GTK2_DEPS_LIBS) $(SM_LIBADD) ../libparser/libparser.la ../../shared/libtrkpropertiesutil.la ../../shared/libeqpreset.la ../../shared/libdeletefromdisk.la ../../shared/libtftintutil.la ../../shared/analyzer/libanalyzer.la ../../shared/scope/libscope.la ../../shared/scriptable/libscriptable.la $(JANSSON_LIBS) $(DISPATCH_LIBS)
 
-ddb_gui_GTK2_la_CFLAGS = -std=c99 -Werror -DGLIB_DISABLE_DEPRECATION_WARNINGS -DGDK_DISABLE_DEPRECATION_WARNINGS -DGTK_DISABLE_DEPRECATION_WARNINGS $(GTK2_DEPS_CFLAGS) $(SM_CFLAGS) $(JANSSON_CFLAGS) $(DISPATCH_CFLAGS) -I@top_srcdir@/include -I@top_srcdir@/shared -DDDB_WARN_DEPRECATED=1
+ddb_gui_GTK2_la_CFLAGS = -std=c99 -Werror -DGLIB_DISABLE_DEPRECATION_WARNINGS -DGDK_DISABLE_DEPRECATION_WARNINGS -DGTK_DISABLE_DEPRECATION_WARNINGS $(GTK2_DEPS_CFLAGS) $(SM_CFLAGS) $(JANSSON_CFLAGS) $(DISPATCH_CFLAGS) $(MEDIALIB_CFLAGS) -I@top_srcdir@/include -I@top_srcdir@/shared -DDDB_WARN_DEPRECATED=1
 
 endif
 
@@ -106,7 +114,7 @@ ddb_gui_GTK3_la_LDFLAGS = -module -avoid-version
 
 ddb_gui_GTK3_la_SOURCES = $(GTKUI_SOURCES_GTK3)
 ddb_gui_GTK3_la_LIBADD = $(LDADD) $(GTK3_DEPS_LIBS) $(SM_LIBADD) ../libparser/libparser.la ../../shared/libtrkpropertiesutil.la ../../shared/libeqpreset.la ../../shared/libdeletefromdisk.la ../../shared/libtftintutil.la ../../shared/analyzer/libanalyzer.la ../../shared/scope/libscope.la ../../shared/scriptable/libscriptable.la $(JANSSON_LIBS) $(DISPATCH_LIBS)
-ddb_gui_GTK3_la_CFLAGS = -std=c99 -Werror -DGLIB_DISABLE_DEPRECATION_WARNINGS -DGDK_DISABLE_DEPRECATION_WARNINGS -DGTK_DISABLE_DEPRECATION_WARNINGS $(GTK3_DEPS_CFLAGS) $(SM_CFLAGS) $(JANSSON_CFLAGS) $(DISPATCH_CFLAGS) -I@top_srcdir@/include -I@top_srcdir@/shared -DDDB_WARN_DEPRECATED=1
+ddb_gui_GTK3_la_CFLAGS = -std=c99 -Werror -DGLIB_DISABLE_DEPRECATION_WARNINGS -DGDK_DISABLE_DEPRECATION_WARNINGS -DGTK_DISABLE_DEPRECATION_WARNINGS $(GTK3_DEPS_CFLAGS) $(SM_CFLAGS) $(JANSSON_CFLAGS) $(DISPATCH_CFLAGS) $(MEDIALIB_CFLAGS) -I@top_srcdir@/include -I@top_srcdir@/shared -DDDB_WARN_DEPRECATED=1
 ddb_gui_GTK3_la_OBJCFLAGS = $(GTK3_DEPS_CFLAGS) $(SM_CFLAGS) $(JANSSON_CFLAGS)
 
 nodist_ddb_gui_GTK3_la_SOURCES = gtkui-gresources.c
