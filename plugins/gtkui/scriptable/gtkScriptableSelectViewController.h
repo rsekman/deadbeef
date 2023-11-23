@@ -26,6 +26,7 @@
 
 #include <gtk/gtk.h>
 #include "scriptable/scriptable.h"
+#include "scriptable/scriptable_model.h"
 #include "gtkScriptable.h"
 
 // ViewController representing a Dropdown box + edit button
@@ -35,29 +36,43 @@ struct gtkScriptableSelectViewController_t;
 typedef struct gtkScriptableSelectViewController_t gtkScriptableSelectViewController_t;
 
 typedef struct {
-    void (*selection_did_change)(gtkScriptableSelectViewController_t *vc, scriptableItem_t *item, void *context);
-    void (*scriptable_did_change)(gtkScriptableSelectViewController_t *view_controller, gtkScriptableChange_t change_type, void *context);
+    void (*selection_did_change) (gtkScriptableSelectViewController_t *vc, scriptableItem_t *item, void *context);
+    void (*scriptable_did_change) (
+        gtkScriptableSelectViewController_t *view_controller,
+        gtkScriptableChange_t change_type,
+        void *context);
 } gtkScriptableSelectViewControllerDelegate_t;
 
 gtkScriptableSelectViewController_t *
-gtkScriptableSelectViewControllerNew(void);
+gtkScriptableSelectViewControllerNew (void);
 
 void
-gtkScriptableSelectViewControllerFree(gtkScriptableSelectViewController_t *self);
+gtkScriptableSelectViewControllerFree (gtkScriptableSelectViewController_t *self);
 
 void
-gtkScriptableSelectViewControllerSetScriptable(gtkScriptableSelectViewController_t *self, scriptableItem_t *scriptable);
+gtkScriptableSelectViewControllerSetScriptable (
+    gtkScriptableSelectViewController_t *self,
+    scriptableItem_t *scriptable);
 
 void
-gtkScriptableSelectViewControllerSetDelegate(gtkScriptableSelectViewController_t *self, gtkScriptableSelectViewControllerDelegate_t *delegate, void *context);
+gtkScriptableSelectViewControllerSetDelegate (
+    gtkScriptableSelectViewController_t *self,
+    gtkScriptableSelectViewControllerDelegate_t *delegate,
+    void *context);
 
 void
-gtkScriptableSelectViewControllerLoad(gtkScriptableSelectViewController_t *self);
+gtkScriptableSelectViewControllerSetModel (gtkScriptableSelectViewController_t *self, scriptableModel_t *model);
+
+void
+gtkScriptableSelectViewControllerLoad (gtkScriptableSelectViewController_t *self);
 
 GtkWidget *
-gtkScriptableSelectViewControllerGetView(gtkScriptableSelectViewController_t *self);
+gtkScriptableSelectViewControllerGetView (gtkScriptableSelectViewController_t *self);
 
 void
-gtkScriptableSelectViewControllerSelectItem(gtkScriptableSelectViewController_t *self, scriptableItem_t *item);
+gtkScriptableSelectViewControllerSelectItem (gtkScriptableSelectViewController_t *self, scriptableItem_t *item);
+
+int
+gtkScriptableSelectViewControllerIndexOfSelectedItem (gtkScriptableSelectViewController_t *self);
 
 #endif /* gtkScriptableSelectViewController_h */

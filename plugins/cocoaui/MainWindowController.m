@@ -40,7 +40,7 @@
 
 extern DB_functions_t *deadbeef;
 
-@interface MainWindowController () <NSMenuDelegate,DeletePlaylistConfirmationControllerDelegate,ScriptableSelectDelegate,ScriptableItemDelegate> {
+@interface MainWindowController () <NSMenuDelegate,DeletePlaylistConfirmationControllerDelegate,ScriptableSelectDelegate> {
     NSTimer *_updateTimer;
     char *_titlebar_playing_script;
     char *_titlebar_playing_subtitle_script;
@@ -130,20 +130,12 @@ extern DB_functions_t *deadbeef;
 
     // preset list and browse button
     self.tfQuerySelectViewController = [ScriptableSelectViewController new];
-    self.tfQuerySelectViewController.scriptableItemDelegate = self;
-    self.tfQuerySelectViewController.scriptableSelectDelegate = self;
+    self.tfQuerySelectViewController.delegate = self;
     self.tfQuerySelectViewController.view.frame = _tfQueryContainer.bounds;
     [_tfQueryContainer addSubview:self.tfQuerySelectViewController.view];
     self.tfQuerySelectViewController.errorViewer = ScriptableErrorViewer.sharedInstance;
     self.tfQuerySelectViewController.dataSource = self.mlQueriesDataSource;
-
-    if (self.mlQueriesDataSource.scriptable != NULL) {
-        NSString *preset = self.mediaLibraryManager.preset;
-        scriptableItem_t *currentPreset = scriptableItemSubItemForName(self.mlQueriesDataSource.scriptable, preset.UTF8String);
-        if (currentPreset != NULL) {
-            [self.tfQuerySelectViewController selectItem:currentPreset];
-        }
-    }
+    self.tfQuerySelectViewController.scriptableModel = self.mediaLibraryManager.model;
 
     id<WidgetProtocol> rootWidget = DesignModeState.sharedInstance.rootWidget;
     NSView *view = rootWidget.view;
@@ -544,11 +536,7 @@ static char sb_text[512];
 #pragma mark - ScriptableSelectDelegate
 
 - (void)scriptableSelectItemSelected:(scriptableItem_t *)item {
-    const char *name = scriptableItemPropertyValueForKey(item, "name");
-    self.mediaLibraryManager.preset = @(name);
 }
-
-#pragma mark - ScriptableItemDelegate
 
 - (void)scriptableItemDidChange:(scriptableItem_t *)scriptable change:(ScriptableItemChange)change {
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
@@ -560,11 +548,6 @@ static char sb_text[512];
             if (tfQueryRoot != NULL) {
                 scriptableItemSave(tfQueryRoot);
             }
-
-            // refresh the tree
-            NSInteger index = self.tfQuerySelectViewController.indexOfSelectedItem;
-            scriptableItem_t *item = scriptableItemChildAtIndex(tfQueryRoot, (unsigned int)index);
-            [self scriptableSelectItemSelected:item];
         }
     });
 }

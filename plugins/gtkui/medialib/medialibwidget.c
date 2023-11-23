@@ -34,7 +34,6 @@ typedef struct {
     GtkTreeView *tree;
     GtkEntry *search_entry;
     ddb_mediasource_source_t *source;
-    char *preset;
     char *search_text;
     int listener_id;
     GtkTreeIter root_iter;
@@ -162,13 +161,17 @@ _reload_content (w_medialib_viewer_t *mlv) {
 
     scriptableItem_t *presets = plugin->get_queries_scriptable (mlv->source);
     if (presets) {
-        if (mlv->preset) {
-            preset = scriptableItemSubItemForName (presets, mlv->preset);
+        scriptableModel_t *model = gtkui_medialib_get_model ();
+
+        char *curr_preset = scriptableModelGetAPI (model)->get_active_name (model);
+        if (curr_preset) {
+            preset = scriptableItemSubItemForName (presets, curr_preset);
         }
         if (preset == NULL) {
             preset = scriptableItemChildren (presets);
         }
         mlv->item_tree = plugin->create_item_tree (mlv->source, preset, mlv->search_text);
+        free (curr_preset);
     }
 
     mlv->is_reloading = 1;
@@ -182,7 +185,6 @@ _reload_content (w_medialib_viewer_t *mlv) {
     GtkTreePath *root_path = gtk_tree_path_new_from_indices (0, -1);
     _add_items (mlv, &mlv->root_iter, mlv->item_tree, root_path);
 
-    //    gtk_tree_view_set_model(mlv->tree, GTK_TREE_MODEL(store));
     gtk_tree_view_expand_row (mlv->tree, root_path, mlv->search_text != NULL);
     gtk_tree_path_free (root_path);
 
@@ -339,13 +341,7 @@ static void
 _scriptableSelectSelectionDidChange (gtkScriptableSelectViewController_t *vc, scriptableItem_t *item, void *context) {
     w_medialib_viewer_t *mlv = context;
 
-    const char *name = scriptableItemPropertyValueForKey (item, "name");
-
-    if (mlv->preset == NULL || strcmp (mlv->preset, name)) {
-        free (mlv->preset);
-        mlv->preset = strdup (name);
-        _reload_content (mlv);
-    }
+    _reload_content (mlv);
 }
 
 static void
@@ -356,6 +352,11 @@ _scriptableSelectScriptableDidChange (
     w_medialib_viewer_t *mlv = context;
     scriptableItem_t *presets = plugin->get_queries_scriptable (mlv->source);
     scriptableItemSave (presets);
+
+    // refresh the tree
+    int index = gtkScriptableSelectViewControllerIndexOfSelectedItem (mlv->selectViewController);
+    scriptableItem_t *item = scriptableItemChildAtIndex (presets, (unsigned int)index);
+    _scriptableSelectSelectionDidChange (mlv->selectViewController, item, context);
 }
 
 static void
@@ -377,8 +378,8 @@ w_medialib_viewer_init (struct ddb_gtkui_widget_s *w) {
     mlv->scriptableSelectDelegate.selection_did_change = _scriptableSelectSelectionDidChange;
     mlv->scriptableSelectDelegate.scriptable_did_change = _scriptableSelectScriptableDidChange;
     gtkScriptableSelectViewControllerSetScriptable (mlv->selectViewController, presets);
+    gtkScriptableSelectViewControllerSetModel (mlv->selectViewController, gtkui_medialib_get_model ());
     gtkScriptableSelectViewControllerSetDelegate (mlv->selectViewController, &mlv->scriptableSelectDelegate, mlv);
-    gtkScriptableSelectViewControllerSelectItem (mlv->selectViewController, scriptableItemChildren (presets));
 
     // Root node
     GtkTreeStore *store = mlv->store;
@@ -410,8 +411,6 @@ w_medialib_viewer_destroy (struct ddb_gtkui_widget_s *w) {
         plugin->free_item_tree (mlv->source, mlv->item_tree);
         mlv->item_tree = NULL;
     }
-    free (mlv->preset);
-    mlv->preset = NULL;
     free (mlv->search_text);
     mlv->search_text = NULL;
     if (mlv->folder_icon) {
@@ -821,6 +820,7 @@ w_medialib_viewer_create (void) {
     gtk_box_pack_start (GTK_BOX (vbox), headerbox, FALSE, FALSE, 8);
 
     w->selectViewController = gtkScriptableSelectViewControllerNew ();
+
     GtkWidget *selectViewControllerWidget = gtkScriptableSelectViewControllerGetView (w->selectViewController);
 
     GtkWidget *buttons_padding_hbox = gtk_hbox_new (FALSE, 0);
