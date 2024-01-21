@@ -33,7 +33,7 @@ case "$TRAVIS_OS_NAME" in
         cd ../../..
     ;;
     windows)
-        DISPATCH_URL="http://sourceforge.net/projects/deadbeef/files/staticdeps/ddb-xdispatch-win-latest.zip/download"
+        DISPATCH_URL="https://github.com/DeaDBeeF-for-Windows/swift-corelibs-libdispatch/releases/download/release%2F5.10/ddb-xdispatch-win-latest.zip"
         PREMAKE_URL="https://github.com/premake/premake-core/releases/download/v5.0.0-beta2/premake-5.0.0-beta2-windows.zip"
         DEPS_URL="https://github.com/kuba160/deadbeef-windows-deps.git"
         echo "Downloading xdispatch_ddb..."
@@ -45,9 +45,9 @@ case "$TRAVIS_OS_NAME" in
         wget "$PREMAKE_URL" -O premake.zip && unzip premake.zip
         echo "Building for x86_64"
         $mingw64 ./premake5 --standard gmake2
-        $mingw64 make config=release_windows CC=clang CXX=clang++
+        $mingw64 make verbose=1 config=release_windows CC=clang CXX=clang++
         $mingw64 ./premake5 --standard --debug-console gmake2
-        $mingw64 make config=debug_windows CC=clang CXX=clang++
+        $mingw64 make verbose=1 config=debug_windows CC=clang CXX=clang++
         cp -r deadbeef-windows-deps/Windows-10 bin/debug/share/themes/Windows-10
         cp -r deadbeef-windows-deps/Windows-10 bin/release/share/themes/Windows-10
         cp -r deadbeef-windows-deps/Windows-10-Icons bin/debug/share/icons/Windows-10-Icons

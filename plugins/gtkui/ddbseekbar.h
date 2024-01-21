@@ -29,7 +29,6 @@
 
 G_BEGIN_DECLS
 
-
 #define DDB_TYPE_SEEKBAR (ddb_seekbar_get_type ())
 #define DDB_SEEKBAR(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), DDB_TYPE_SEEKBAR, DdbSeekbar))
 #define DDB_SEEKBAR_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST ((klass), DDB_TYPE_SEEKBAR, DdbSeekbarClass))
@@ -42,25 +41,18 @@ typedef struct _DdbSeekbarClass DdbSeekbarClass;
 typedef struct _DdbSeekbarPrivate DdbSeekbarPrivate;
 
 struct _DdbSeekbar {
-	GtkWidget parent_instance;
-	DdbSeekbarPrivate * priv;
-    int seekbar_moving;
-    float seekbar_moved;
-    float seektime_alpha;
-    int seekbar_move_x;
-    int textpos;
-    int textwidth;
+    GtkWidget parent_instance;
+    DdbSeekbarPrivate *priv;
 };
 
 struct _DdbSeekbarClass {
-	GtkWidgetClass parent_class;
+    GtkWidgetClass parent_class;
 };
-
 
 GType
 ddb_seekbar_get_type (void);
 
-GtkWidget*
+GtkWidget *
 ddb_seekbar_new (void);
 
 void

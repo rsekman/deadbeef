@@ -30,7 +30,8 @@ if _OPTIONS["standard"] ~= nil then
   plugins_to_disable = {"plugin-converter", "plugin-converter_gtk2",
                         "plugin-converter_gtk3","plugin-ffmpeg","plugin-waveout",
                         "plugin-wildmidi", "plugin-soundtouch", "plugin-sid", "plugin-gme",
-                        "plugin-mms", "plugin-cdda", "plugin-sc68", "plugin-vtx"}
+                        "plugin-mms", "plugin-cdda", "plugin-sc68", "plugin-vtx",
+                        "plugin-notify"}
   for i,v in ipairs(plugins_to_disable) do
     if _OPTIONS[v] == nil then
       _OPTIONS[v] = "disabled"
@@ -558,7 +559,7 @@ project "notify_plugin"
   files {
     "plugins/notify/notify.c"
   }
-  pkgconfig ("dbus-1")
+  pkgconfig ("dbus-1", "glib-2.0", "gio-2.0", "gdk-pixbuf-2.0")
   buildoptions {"-fblocks"}
   links {"dispatch", "BlocksRuntime"}
 end
@@ -898,6 +899,7 @@ project "converter"
     "plugins/converter/converter.c",
     "shared/mp4tagutil.c"
   }
+  includedirs {"external/mp4p/include", "shared"}
   links {"mp4p"}
 end
 
