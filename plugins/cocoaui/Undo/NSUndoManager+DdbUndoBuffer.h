@@ -1,6 +1,6 @@
 /*
     DeaDBeeF -- the music player
-    Copyright (C) 2009-2024 Oleksiy Yakovenko and other contributors
+    Copyright (C) 2009-2022 Oleksiy Yakovenko and other contributors
 
     This software is provided 'as-is', without any express or implied
     warranty.  In no event will the authors be held liable for any damages
@@ -21,3 +21,16 @@
     3. This notice may not be removed or altered from any source distribution.
 */
 
+#import <Foundation/Foundation.h>
+
+NS_ASSUME_NONNULL_BEGIN
+
+@class DdbUndoBuffer;
+
+@interface NSUndoManager (DdbUndoBuffer)
+
+- (void)registerUndoBuffer:(DdbUndoBuffer *)undoBuffer;
+
+@end
+
+NS_ASSUME_NONNULL_END

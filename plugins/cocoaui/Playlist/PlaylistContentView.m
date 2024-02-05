@@ -14,6 +14,7 @@
 #import "MedialibItemDragDropHolder.h"
 #import "PlaylistLocalDragDropHolder.h"
 #include <deadbeef/deadbeef.h>
+#import "UndoIntegration.h"
 
 extern DB_functions_t *deadbeef;
 
@@ -162,6 +163,9 @@ static int grouptitleheight = 22;
         row = [self.dataModel rowForIndex:sel];
     }
 
+
+    ddb_undo->set_action_name ("Drag & drop");
+
     if ([pboard.types containsObject:ddbPlaylistItemsUTIType]) {
         NSArray *classes = @[[PlaylistLocalDragDropHolder class]];
         NSDictionary *options = @{};
@@ -182,7 +186,7 @@ static int grouptitleheight = 22;
             [self.delegate dropItems:(int)from_playlist before:row indices:indices count:(int)length copy:op==NSDragOperationCopy];
             free(indices);
         }
-    }
+   }
     if ([pboard.types containsObject:ddbMedialibItemUTIType]) {
         NSArray *classes = @[[MedialibItemDragDropHolder class]];
         NSDictionary *options = @{};
@@ -208,12 +212,14 @@ static int grouptitleheight = 22;
         NSArray *paths = [pboard propertyListForType:NSFilenamesPboardType];
         if (row != (self.dataModel).invalidRow) {
             // add before selected row
-            [self.delegate externalDropItems:paths after: [self.dataModel rowForIndex:sel-1] ];
+            [self.delegate externalDropItems:paths after: [self.dataModel rowForIndex:sel-1] completionBlock:^{
+            }];
         }
         else {
             // no selected row, add to end
             DdbListviewRow_t lastRow = [self.dataModel rowForIndex:((self.dataModel).rowCount-1)];
-            [self.delegate externalDropItems:paths after:lastRow];
+            [self.delegate externalDropItems:paths after:lastRow completionBlock:^{
+            }];
         }
     }
 

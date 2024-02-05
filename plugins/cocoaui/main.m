@@ -24,12 +24,16 @@
 #import <Cocoa/Cocoa.h>
 #import "AppDelegate.h"
 #include <deadbeef/deadbeef.h>
+#import "DdbUndoBuffer.h"
+#import "NSUndoManager+DdbUndoBuffer.h"
+#import "Undo/UndoIntegration.h"
 
 extern DB_functions_t *deadbeef;
 
 int cocoaui_start(void) {
     char *argv[1];
     argv[0] = "FIXME";
+    UndoIntegrationInit();
     return NSApplicationMain(1, (const char **)argv);
 }
 

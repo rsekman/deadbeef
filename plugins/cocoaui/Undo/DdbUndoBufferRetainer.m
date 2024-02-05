@@ -1,6 +1,6 @@
 /*
     DeaDBeeF -- the music player
-    Copyright (C) 2009-2024 Oleksiy Yakovenko and other contributors
+    Copyright (C) 2009-2022 Oleksiy Yakovenko and other contributors
 
     This software is provided 'as-is', without any express or implied
     warranty.  In no event will the authors be held liable for any damages
@@ -21,3 +21,43 @@
     3. This notice may not be removed or altered from any source distribution.
 */
 
+
+#import "DdbUndoBuffer.h"
+#import "DdbUndoBufferRetainer.h"
+
+@interface DdbUndoBufferRetainer()
+
+@property (nonatomic) NSMutableSet<DdbUndoBuffer *> *buffers;
+
+@end
+
+@implementation DdbUndoBufferRetainer
+
+static DdbUndoBufferRetainer *_instance;
+
++ (DdbUndoBufferRetainer *)shared {
+    if (_instance == nil) {
+        _instance = [DdbUndoBufferRetainer new];
+    }
+    return _instance;
+}
+
++ (void)cleanupShared {
+    _instance = nil;
+}
+
+- (instancetype)init {
+    self = [super init];
+    _buffers = [NSMutableSet new];
+    return self;
+}
+
+- (void)retainBuffer:(DdbUndoBuffer *)buffer {
+    [self.buffers addObject:buffer];
+}
+
+- (void)releaseBuffer:(DdbUndoBuffer *)buffer {
+    [self.buffers removeObject:buffer];
+}
+
+@end

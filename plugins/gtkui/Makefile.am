@@ -62,7 +62,9 @@ GTKUI_SOURCES = \
 	scriptable/gtkScriptable.c scriptable/gtkScriptable.h\
 	scriptable/gtkScriptableListEditViewController.c scriptable/gtkScriptableListEditViewController.h\
 	scriptable/gtkScriptableListEditWindowController.c scriptable/gtkScriptableListEditWindowController.h\
-	scriptable/gtkScriptableSelectViewController.c scriptable/gtkScriptableSelectViewController.h
+	scriptable/gtkScriptableSelectViewController.c scriptable/gtkScriptableSelectViewController.h\
+	undostack.c undostack.h\
+	undointegration.c undointegration.h
 
 	$(SM_SOURCES) $(OSXSRC)
 
@@ -101,7 +103,7 @@ GTKUI_SOURCES_GTK2 = $(GTKUI_SOURCES)
 ddb_gui_GTK2_la_SOURCES = $(GTKUI_SOURCES_GTK2)
 ddb_gui_GTK2_la_LDFLAGS = -module -avoid-version
 
-ddb_gui_GTK2_la_LIBADD = $(LDADD) $(GTK2_DEPS_LIBS) $(SM_LIBADD) ../libparser/libparser.la ../../shared/libtrkpropertiesutil.la ../../shared/libeqpreset.la ../../shared/libdeletefromdisk.la ../../shared/libtftintutil.la ../../shared/analyzer/libanalyzer.la ../../shared/scope/libscope.la ../../shared/scriptable/libscriptable.la $(JANSSON_LIBS) $(DISPATCH_LIBS)
+ddb_gui_GTK2_la_LIBADD = $(LDADD) $(GTK2_DEPS_LIBS) $(SM_LIBADD) ../libparser/libparser.la ../../shared/libtrkpropertiesutil.la ../../shared/libeqpreset.la ../../shared/libdeletefromdisk.la ../../shared/libtftintutil.la ../../shared/analyzer/libanalyzer.la ../../shared/scope/libscope.la ../../shared/scriptable/libscriptable.la  $(JANSSON_LIBS) $(DISPATCH_LIBS)
 
 ddb_gui_GTK2_la_CFLAGS = -std=c99 -Werror -Wno-error=unused-command-line-argument -DGLIB_DISABLE_DEPRECATION_WARNINGS -DGDK_DISABLE_DEPRECATION_WARNINGS -DGTK_DISABLE_DEPRECATION_WARNINGS $(GTK2_DEPS_CFLAGS) $(SM_CFLAGS) $(JANSSON_CFLAGS) $(DISPATCH_CFLAGS) $(MEDIALIB_CFLAGS) -I@top_srcdir@/include -I@top_srcdir@/shared -DDDB_WARN_DEPRECATED=1
 

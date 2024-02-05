@@ -1336,6 +1336,8 @@ artwork_listener (ddb_artwork_listener_event_t event, void *user_data, int64_t p
     deadbeef->plt_sort_v2 (plt, PL_MAIN, c->type, (c->sortFormat && c->sortFormat[0]) ? c->sortFormat : c->format, self.columns[column].sort_order);
     deadbeef->plt_unref (plt);
 
+    deadbeef->sendmessage (DB_EV_PLAYLISTCHANGED, 0, DDB_PLAYLIST_CHANGE_CONTENT, 0);
+
     PlaylistView *lv = (PlaylistView *)self.view;
     lv.headerView.needsDisplay = YES;
 }
@@ -1364,18 +1366,18 @@ artwork_listener (ddb_artwork_listener_event_t event, void *user_data, int64_t p
     deadbeef->pl_save_all();
 }
 
--(void)externalDropItems:(NSArray *)paths after:(DdbListviewRow_t)_after {
-    ddb_playlist_t *plt = deadbeef->plt_get_curr ();
+-(void)externalDropItems:(NSArray *)paths after:(DdbListviewRow_t)_after  completionBlock:(nonnull void (^) (void))completionBlock {
+    ddb_playlist_t *plt = deadbeef->plt_alloc("drag-drop-playlist");
+    ddb_playlist_t *plt_curr = deadbeef->plt_get_curr ();
     if (!deadbeef->plt_add_files_begin (plt, 0)) {
-        dispatch_queue_t aQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
-        dispatch_async(aQueue, ^{
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
             DB_playItem_t *first = NULL;
-            DB_playItem_t *after = (DB_playItem_t *)_after;
+            DB_playItem_t *after = NULL;
+            int abort = 0;
             for(NSUInteger i = 0; i < paths.count; i++ )
             {
                 NSString* path = paths[i];
                 if (path) {
-                    int abort = 0;
                     const char *fname = path.UTF8String;
                     DB_playItem_t *inserted = deadbeef->plt_insert_dir2 (0, plt, after, fname, &abort, NULL, NULL);
                     if (!inserted && !abort) {
@@ -1394,8 +1396,6 @@ artwork_listener (ddb_artwork_listener_event_t event, void *user_data, int64_t p
                         }
                         after = inserted;
                         deadbeef->pl_item_ref (after);
-
-                        // TODO: set cursor to the first dropped item
                     }
 
                     if (abort) {
@@ -1407,9 +1407,24 @@ artwork_listener (ddb_artwork_listener_event_t event, void *user_data, int64_t p
                 deadbeef->pl_item_unref (after);
             }
             deadbeef->plt_add_files_end (plt, 0);
-            deadbeef->plt_unref (plt);
-            deadbeef->pl_save_current();
-            deadbeef->sendmessage (DB_EV_PLAYLISTCHANGED, 0, DDB_PLAYLIST_CHANGE_CONTENT, 0);
+            if (abort) {
+                deadbeef->plt_unref (plt);
+                deadbeef->plt_unref (plt_curr);
+            }
+            else {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    // move items to UI playlist
+                    deadbeef->plt_move_all_items(plt_curr, plt, (ddb_playItem_t *)_after);
+                    // TODO: set cursor to the first dropped item
+
+                    deadbeef->plt_unref (plt);
+                    deadbeef->plt_unref (plt_curr);
+                    deadbeef->pl_save_current();
+                    deadbeef->sendmessage (DB_EV_PLAYLISTCHANGED, 0, DDB_PLAYLIST_CHANGE_CONTENT, 0);
+
+                    completionBlock();
+                });
+            }
         });
     }
     else {

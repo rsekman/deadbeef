@@ -23,6 +23,7 @@
 #include "../scriptable/gtkScriptableSelectViewController.h"
 #include "mlcellrendererpixbuf.h"
 #include "../gtkui.h"
+#include "../undointegration.h"
 
 extern DB_functions_t *deadbeef;
 static DB_mediasource_t *plugin;
@@ -500,6 +501,8 @@ _collect_selected_tracks (
 
 static void
 _append_tracks_to_playlist (ddb_playItem_t **tracks, int count, ddb_playlist_t *plt) {
+    ddb_undo->group_begin ();
+
     ddb_playItem_t *prev = deadbeef->plt_get_tail_item (plt, PL_MAIN);
     for (int i = 0; i < count; i++) {
         ddb_playItem_t *it = deadbeef->pl_item_alloc ();
@@ -510,6 +513,10 @@ _append_tracks_to_playlist (ddb_playItem_t **tracks, int count, ddb_playlist_t *
         }
         prev = it;
     }
+
+    ddb_undo->group_end ();
+    ddb_undo->set_action_name (_("Add Files"));
+
     if (prev != NULL) {
         deadbeef->pl_item_unref (prev);
     }

@@ -1,6 +1,6 @@
 /*
     DeaDBeeF -- the music player
-    Copyright (C) 2009-2024 Oleksiy Yakovenko and other contributors
+    Copyright (C) 2009-2022 Oleksiy Yakovenko and other contributors
 
     This software is provided 'as-is', without any express or implied
     warranty.  In no event will the authors be held liable for any damages
@@ -21,3 +21,16 @@
     3. This notice may not be removed or altered from any source distribution.
 */
 
+#ifndef undo_playlist_h
+#define undo_playlist_h
+
+#include "undo/undobuffer.h"
+#include "../playlist.h"
+
+void
+undo_remove_items(ddb_undobuffer_t *undobuffer, playlist_t *plt, playItem_t **items, size_t count);
+
+void
+undo_insert_items(ddb_undobuffer_t *undobuffer, playlist_t *plt, playItem_t **items, size_t count);
+
+#endif /* undo_playlist_h */

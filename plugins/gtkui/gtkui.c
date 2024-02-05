@@ -68,6 +68,8 @@
 #include "plmenu.h"
 #include "covermanager/albumartwidget.h"
 #include "selpropertieswidget.h"
+#include "undostack.h"
+#include "undointegration.h"
 
 #define USE_GTK_APPLICATION 1
 
@@ -974,6 +976,12 @@ gtkui_message (uint32_t id, uintptr_t ctx, uint32_t p1, uint32_t p2) {
         return -1;
     }
 
+    if (id == DB_EV_PLAYLISTCHANGED) {
+        gtkui_dispatch_on_main(^{
+            deadbeef->undo_process();
+        });
+    }
+
     switch (id) {
     case DB_EV_SONGSTARTED: {
         ddb_event_track_t *ev = (ddb_event_track_t *)ctx;
@@ -1515,6 +1523,7 @@ gtkui_mainwin_init (void) {
     w_reg_widget (_ ("Media library viewer"), 0, w_medialib_viewer_create, "medialibviewer", NULL);
 
     mainwin = create_mainwin ();
+    refresh_undo_redo_menu ();
 
 #if GTK_CHECK_VERSION(3, 10, 0) && USE_GTK_APPLICATION
     // This must be called before window is shown
@@ -1652,6 +1661,7 @@ gtkui_mainwin_free (void) {
         set_title_timeout_id = 0;
     }
 
+    gtkui_undostack_deinit();
     clipboard_free_current ();
     eq_window_destroy ();
     trkproperties_destroy ();
@@ -1833,6 +1843,8 @@ gtkui_start (void) {
         GTK_MAJOR_VERSION,
         GTK_MINOR_VERSION,
         GTK_MICRO_VERSION);
+
+    undo_integration_init();
 
     import_legacy_tf ("gtkui.titlebar_playing", "gtkui.titlebar_playing_tf");
     import_legacy_tf ("gtkui.titlebar_stopped", "gtkui.titlebar_stopped_tf");
@@ -2189,9 +2201,25 @@ static DB_plugin_action_t action_view_log = { .title = "View/Show\\/Hide Log win
                                               .callback2 = action_toggle_logwindow_handler,
                                               .next = &action_find };
 
+static DB_plugin_action_t action_edit_undo = {
+    .title = "Edit/Undo",
+    .name = "undo",
+    .flags = DB_ACTION_COMMON,
+    .callback2 = action_undo,
+    .next = &action_view_log
+};
+
+static DB_plugin_action_t action_edit_redo = {
+    .title = "Edit/Redo",
+    .name = "redo",
+    .flags = DB_ACTION_COMMON,
+    .callback2 = action_redo,
+    .next = &action_edit_undo
+};
+
 static DB_plugin_action_t *
 gtkui_get_actions (DB_playItem_t *it) {
-    return &action_view_log;
+    return &action_edit_redo;
 }
 
 #if !GTK_CHECK_VERSION(3, 0, 0)

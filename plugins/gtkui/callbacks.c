@@ -49,6 +49,7 @@
 #include "../libparser/parser.h"
 #include "drawing.h"
 #include "eq.h"
+#include "undostack.h"
 #include "wingeom.h"
 #include "widgets.h"
 #include "../hotkeys/hotkeys.h"
@@ -166,6 +167,9 @@ on_playrand_clicked (GtkButton *button, gpointer user_data) {
 
 gboolean
 on_mainwin_key_press_event (GtkWidget *widget, GdkEventKey *event, gpointer user_data) {
+    if (event->is_modifier) {
+        return FALSE;
+    }
     // local hotkeys
     GdkModifierType consumed_modifiers;
     guint accel_key;
@@ -706,4 +710,19 @@ on_sortfmt_show (GtkWidget *widget, gpointer user_data) {
         gtk_text_view_set_buffer (GTK_TEXT_VIEW (widget), sortbuffer);
         g_object_unref (G_OBJECT (sortbuffer));
     }
+}
+
+void
+on_mainwin_undo_activate               (GtkMenuItem     *menuitem,
+                                        gpointer         user_data)
+{
+    gtkui_undostack_perform_undo ();
+}
+
+
+void
+on_mainwin_redo_activate               (GtkMenuItem     *menuitem,
+                                        gpointer         user_data)
+{
+    gtkui_undostack_perform_redo ();
 }

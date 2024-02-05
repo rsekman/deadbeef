@@ -35,10 +35,11 @@ deadbeef_SOURCES =\
 	u8_uc_map.h\
 	vfs.c vfs.h vfs_stdio.c\
 	volume.c volume.h\
-	viz.c viz.h
+	viz.c viz.h\
+	undo/undo_playlist.c undo/undo_playlist.h
 
-deadbeef_LDADD = $(LDADD) $(ICONV_LIB) $(DL_LIBS) -lm -lpthread $(DISPATCH_LIBS) $(LTLIBINTL) ../shared/libctmap.la ../plugins/libparser/libparser.la
+deadbeef_LDADD = $(LDADD) $(ICONV_LIB) $(DL_LIBS) -lm -lpthread $(DISPATCH_LIBS) $(LTLIBINTL) ../shared/libctmap.la ../shared/undo/libundo.la ../plugins/libparser/libparser.la
 
-deadbeef_CFLAGS = $(DEPS_CFLAGS) $(DISPATCH_CFLAGS) -std=c99 -DLOCALEDIR=\"@localedir@\" -I@top_srcdir@/include -I@top_srcdir@
+deadbeef_CFLAGS = $(DEPS_CFLAGS) $(DISPATCH_CFLAGS) -std=c99 -DLOCALEDIR=\"@localedir@\" -I@top_srcdir@/include -I@top_srcdir@/shared -I@top_srcdir@
 
 EXTRA_DIST = sj_to_unicode.h 

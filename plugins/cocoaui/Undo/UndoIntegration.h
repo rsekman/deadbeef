@@ -21,3 +21,12 @@
     3. This notice may not be removed or altered from any source distribution.
 */
 
+#ifndef UndoIntegration_h
+#define UndoIntegration_h
+
+#include <deadbeef/deadbeef.h>
+
+FOUNDATION_EXTERN ddb_undo_interface_t *ddb_undo;
+void UndoIntegrationInit(void);
+
+#endif /* UndoIntegration_h */

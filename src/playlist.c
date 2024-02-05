@@ -71,6 +71,8 @@
 #include "sort.h"
 #include "cueutil.h"
 #include "playmodes.h"
+#include "undo/undomanager.h"
+#include "undo/undo_playlist.h"
 
 // disable custom title function, until we have new title formatting (0.7)
 #define DISABLE_CUSTOM_TITLE
@@ -84,8 +86,6 @@
 #endif
 
 // file format revision history
-// 1.1->1.2 changelog:
-//    added flags field
 // 1.0->1.1 changelog:
 //    added sample-accurate seek positions for sub-tracks
 // 1.1->1.2 changelog:
@@ -452,6 +452,7 @@ plt_add (int before, const char *title) {
             }
         }
     }
+    plt->undo_enabled = 1;
     UNLOCK;
 
     plt_gen_conf ();
@@ -713,7 +714,7 @@ plt_get_modification_idx (playlist_t *plt) {
 void
 plt_free (playlist_t *plt) {
     LOCK;
-
+    plt->undo_enabled = 0;
     plt_clear (plt);
 
     if (plt->title) {
@@ -901,17 +902,30 @@ plt_clear (playlist_t *plt) {
 
     pl_unlock ();
 
+    ddb_undobuffer_t *undobuffer = ddb_undomanager_get_buffer (ddb_undomanager_shared ());
+    ddb_undobuffer_group_begin (undobuffer);
     while (it != NULL) {
         playItem_t *next = it->next[PL_MAIN];
+        playItem_t *next_search = it->next[PL_SEARCH];
+
+        undo_remove_items(undobuffer, plt, &it, 1);
+
+        if (next != NULL) {
+            next->prev[PL_MAIN] = NULL;
+        }
+        if (next_search != NULL) {
+            next_search->prev[PL_SEARCH] = NULL;
+        }
+
         it->next[PL_MAIN] = NULL;
-        it->prev[PL_MAIN] = NULL;
         it->next[PL_SEARCH] = NULL;
-        it->prev[PL_SEARCH] = NULL;
+
         streamer_song_removed_notify (it);
         playqueue_remove (it);
         pl_item_unref (it);
         it = next;
     }
+    ddb_undobuffer_group_end (undobuffer);
 }
 
 void
@@ -1643,6 +1657,8 @@ plt_remove_item (playlist_t *playlist, playItem_t *it) {
 
     // remove from both lists
     LOCK;
+    undo_remove_items(ddb_undomanager_get_buffer(ddb_undomanager_shared()), playlist, &it, 1);
+
     for (int iter = PL_MAIN; iter <= PL_SEARCH; iter++) {
         if (it->prev[iter] || it->next[iter] || playlist->head[iter] == it || playlist->tail[iter] == it) {
             playlist->count[iter]--;
@@ -1794,6 +1810,7 @@ pl_get_idx_of_iter (playItem_t *it, int iter) {
 playItem_t *
 plt_insert_item (playlist_t *playlist, playItem_t *after, playItem_t *it) {
     LOCK;
+    undo_insert_items(ddb_undomanager_get_buffer(ddb_undomanager_shared()), playlist, &it, 1);
     pl_item_ref (it);
     if (!after) {
         it->next[PL_MAIN] = playlist->head[PL_MAIN];
@@ -1921,7 +1938,6 @@ pl_item_unref (playItem_t *it) {
 
 int
 plt_delete_selected (playlist_t *playlist) {
-
     LOCK;
     int count = plt_getselcount (playlist);
     if (count == 0) {
@@ -1931,19 +1947,26 @@ plt_delete_selected (playlist_t *playlist) {
     playItem_t **items_to_delete = calloc (count, sizeof (playItem_t *));
     playItem_t *next = NULL;
     int i = 0;
-    for (playItem_t *it = playlist->head[PL_MAIN]; it; it = next) {
+    int ret = -1;
+    int current_index = 0;
+    for (playItem_t *it = playlist->head[PL_MAIN]; it; it = next, current_index++) {
         next = it->next[PL_MAIN];
         if (it->selected) {
             items_to_delete[i++] = it;
+            if (ret == -1) {
+                ret = current_index;
+            }
             pl_item_ref (it);
         }
     }
     UNLOCK;
 
+    ddb_undobuffer_group_begin (ddb_undomanager_get_buffer (ddb_undomanager_shared ()));
     for (i = 0; i < count; i++) {
         plt_remove_item (playlist, items_to_delete[i]);
         pl_item_unref (items_to_delete[i]);
     }
+    ddb_undobuffer_group_end (ddb_undomanager_get_buffer (ddb_undomanager_shared ()));
     free (items_to_delete);
 
     LOCK;
@@ -1954,7 +1977,7 @@ plt_delete_selected (playlist_t *playlist) {
         playlist->current_row[PL_SEARCH] = playlist->count[PL_SEARCH] - 1;
     }
     UNLOCK;
-    return count - 1;
+    return ret;
 }
 
 int
@@ -2332,6 +2355,9 @@ plt_load_int (
     playItem_t *it = NULL;
     playItem_t *last_added = NULL;
 
+    unsigned undo_enabled = plt->undo_enabled;
+    plt->undo_enabled = 0;
+
 #ifdef __MINGW32__
     if (!strncmp (fname, "file://", 7)) {
         fname += 7;
@@ -2383,6 +2409,7 @@ plt_load_int (
                         loaded_it =
                             plug[p]->load2 (visibility, (ddb_playlist_t *)plt, (DB_playItem_t *)after, fname, pabort);
                     }
+                    plt->undo_enabled = undo_enabled;
                     return (playItem_t *)loaded_it;
                 }
             }
@@ -2391,6 +2418,7 @@ plt_load_int (
     FILE *fp = fopen (fname, "rb");
     if (!fp) {
         //        trace ("plt_load: failed to open %s\n", fname);
+        plt->undo_enabled = undo_enabled;
         return NULL;
     }
 
@@ -2647,6 +2675,7 @@ plt_load_int (
     if (last_added) {
         pl_item_unref (last_added);
     }
+    plt->undo_enabled = undo_enabled;
     return last_added;
 load_fail:
     if (it) {
@@ -2660,6 +2689,7 @@ load_fail:
     if (last_added) {
         pl_item_unref (last_added);
     }
+    plt->undo_enabled = undo_enabled;
     return last_added;
 }
 
@@ -3668,6 +3698,28 @@ plt_move_items (playlist_t *to, int iter, playlist_t *from, playItem_t *drop_bef
     }
 
     no_remove_notify = 0;
+    UNLOCK;
+}
+
+void
+plt_move_all_items (playlist_t *to, playlist_t *from, playItem_t *insert_after) {
+    LOCK;
+    playItem_t *it = from->head[PL_MAIN];
+    pl_item_ref(it);
+    ddb_undobuffer_group_begin (ddb_undomanager_get_buffer (ddb_undomanager_shared ()));
+    while (it != NULL) {
+        playItem_t *next = it->next[PL_MAIN];
+        if (next != NULL) {
+            pl_item_ref (next);
+        }
+
+        plt_remove_item (from, it);
+        plt_insert_item (to, insert_after, it);
+        insert_after = it;
+        pl_item_unref (it);
+        it = next;
+    }
+    ddb_undobuffer_group_end (ddb_undomanager_get_buffer (ddb_undomanager_shared ()));
     UNLOCK;
 }
 

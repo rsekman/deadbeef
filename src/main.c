@@ -28,6 +28,7 @@
 #    include <config.h>
 #endif
 #include <assert.h>
+#include <dispatch/dispatch.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -95,6 +96,8 @@
 #    include "scriptable/scriptable_encoder.h"
 //#include "scriptable/scriptable_tfquery.h"
 #endif
+
+#include "undo/undomanager.h"
 
 #ifndef PREFIX
 #    error PREFIX must be defined
@@ -917,7 +920,7 @@ player_mainloop (void) {
                         output->unpause ();
                         messagepump_push (DB_EV_PAUSED, 0, 0, 0);
                     }
-                    else {
+                    else if (output->state () == DDB_PLAYBACK_STATE_PLAYING) {
                         output->pause ();
                         messagepump_push (DB_EV_PAUSED, 0, 1, 0);
                     }
@@ -949,6 +952,7 @@ player_mainloop (void) {
                         streamer_notify_track_deleted ();
                         break;
                     }
+                    // fallthrough
                 case DB_EV_PAUSED:
                 case DB_EV_SONGFINISHED:
                     save_resume_state ();
@@ -1103,6 +1107,8 @@ main_cleanup_and_quit (void) {
 #endif
 
         pl_free (); // may access conf_*
+        ddb_undomanager_free(ddb_undomanager_shared());
+
         conf_free ();
 
         trace ("messagepump_free\n");
@@ -1120,6 +1126,7 @@ main_cleanup_and_quit (void) {
 
         exit (0);
     });
+
 }
 
 static void
@@ -1570,6 +1577,8 @@ main (int argc, char *argv[]) {
     }
 
     streamer_playmodes_init ();
+
+    ddb_undomanager_shared_init (NULL);
 
     pl_load_all ();
 

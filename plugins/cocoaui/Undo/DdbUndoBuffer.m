@@ -1,6 +1,6 @@
 /*
     DeaDBeeF -- the music player
-    Copyright (C) 2009-2024 Oleksiy Yakovenko and other contributors
+    Copyright (C) 2009-2022 Oleksiy Yakovenko and other contributors
 
     This software is provided 'as-is', without any express or implied
     warranty.  In no event will the authors be held liable for any damages
@@ -21,3 +21,34 @@
     3. This notice may not be removed or altered from any source distribution.
 */
 
+#import "DdbUndoBuffer.h"
+#import <deadbeef/deadbeef.h>
+#import "UndoIntegration.h"
+
+extern DB_functions_t *deadbeef;
+
+@interface DdbUndoBuffer()
+
+@property (nonatomic) struct ddb_undobuffer_s *buffer;
+
+@end
+
+@implementation DdbUndoBuffer
+
+- (void)dealloc {
+    ddb_undo->free_buffer (_buffer);
+}
+
+- (instancetype)initWithUndoBuffer:(struct ddb_undobuffer_s *)buffer {
+    self = [super init];
+    _buffer = buffer;
+    return self;
+}
+
+- (void)apply {
+    ddb_undo->execute_buffer (self.buffer);
+
+    deadbeef->sendmessage(DB_EV_PLAYLISTCHANGED, 0, 0, 0);
+}
+
+@end

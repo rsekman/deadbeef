@@ -92,6 +92,7 @@ typedef struct playlist_s {
     unsigned loading_cue : 1;
     unsigned ignore_archives : 1;
     unsigned follow_symlinks : 1;
+    unsigned undo_enabled: 1;
 } playlist_t;
 
 // global playlist control functions
@@ -403,6 +404,9 @@ pl_set_cursor (int iter, int cursor);
 
 void
 plt_move_items (playlist_t *to, int iter, playlist_t *from, playItem_t *drop_before, uint32_t *indexes, int count);
+
+void
+plt_move_all_items (playlist_t *to, playlist_t *from, playItem_t *insert_after);
 
 void
 plt_copy_items (playlist_t *to, int iter, playlist_t *from, playItem_t *before, uint32_t *indices, int cnt);

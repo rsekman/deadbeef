@@ -29,6 +29,7 @@
 #import "conf.h"
 #import "CoverManager.h"
 #import "DdbShared.h"
+#import "DdbUndoBufferRetainer.h"
 #import "DesignModeDefs.h"
 #import "DesignModeState.h"
 #import "EqualizerWindowController.h"
@@ -40,6 +41,7 @@
 #import "ReplayGainScannerController.h"
 #import "TrackPropertiesManager.h"
 #import "streamer.h"
+#import "UndoIntegration.h"
 
 extern DB_functions_t *deadbeef;
 
@@ -148,7 +150,6 @@ static void fileadd_begin (ddb_fileadd_data_t *data, void *user_data) {
     fileadd_cancelled = 0;
     dispatch_async(dispatch_get_main_queue(), ^{
         [appDelegate.mainWindow.window beginSheet:appDelegate.addFilesWindow completionHandler:^(NSModalResponse returnCode) {
-
         }];
     });
 }
@@ -168,7 +169,7 @@ static int file_added (ddb_fileadd_data_t *data, void *user_data) {
     const char *uri = deadbeef->pl_find_meta (data->track, ":URI");
     if (!_settingLabel) {
         // HACK: we want to set the label asynchronously, to minimize delays,
-        // but we also want to avoid sending multiple labels, becuase that's meaningless.
+        // but we also want to avoid sending multiple labels, because that's meaningless.
         // So we use a basic flag, to see if the label is being set already.
         NSString *s = @(uri);
         _settingLabel = YES;
@@ -263,6 +264,7 @@ main_cleanup_and_quit (void);
 
 - (void)applicationWillTerminate:(NSNotification *)notification {
     @autoreleasepool {
+        [DdbUndoBufferRetainer cleanupShared];
         [ConverterWindowController cleanup];
         [ReplayGainScannerController cleanup];
         [_searchWindow close];
@@ -435,31 +437,51 @@ main_cleanup_and_quit (void);
     if ( [openDlg runModal] == NSModalResponseOK )
     {
         NSArray* files = openDlg.URLs;
-        ddb_playlist_t *plt = deadbeef->plt_get_curr ();
+        ddb_playlist_t *plt = deadbeef->plt_alloc("open-files");
+        ddb_playlist_t *plt_curr = deadbeef->plt_get_curr ();
+        if (clear) {
+            deadbeef->plt_clear(plt_curr);
+            deadbeef->sendmessage (DB_EV_PLAYLISTCHANGED, 0, DDB_PLAYLIST_CHANGE_CONTENT, 0);
+        }
         if (!deadbeef->plt_add_files_begin (plt, 0)) {
-            if (clear) {
-                deadbeef->plt_clear(plt);
-                deadbeef->sendmessage (DB_EV_PLAYLISTCHANGED, 0, DDB_PLAYLIST_CHANGE_CONTENT, 0);
-            }
-            dispatch_queue_t aQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
-            dispatch_async(aQueue, ^{
+            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
                 for (NSUInteger i = 0; i < files.count; i++) {
                     NSString* fileName = [files[i] path];
                     if (fileName) {
                         deadbeef->plt_add_file2 (0, plt, fileName.UTF8String, NULL, NULL);
+                        if (fileadd_cancelled) {
+                            break;
+                        }
                     }
                 }
-                deadbeef->plt_add_files_end (plt, 0);
-                deadbeef->plt_unref (plt);
-                deadbeef->pl_save_current();
-                if (play) {
-                    deadbeef->sendmessage (DB_EV_PLAYLISTCHANGED, 0, DDB_PLAYLIST_CHANGE_CONTENT, 0);
-                    deadbeef->sendmessage (DB_EV_PLAY_NUM, 0, 0, 0);
+                if (!fileadd_cancelled) {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        ddb_playItem_t *tail = deadbeef->plt_get_tail_item(plt_curr, PL_MAIN);
+                        ddb_undo->set_action_name ("Add Files");
+                        deadbeef->plt_move_all_items(plt_curr, plt, tail);
+                        if (tail != NULL) {
+                            deadbeef->pl_item_unref (tail);
+                        }
+                        deadbeef->pl_save_current();
+                        deadbeef->plt_add_files_end (plt, 0);
+                        deadbeef->plt_unref (plt);
+                        deadbeef->plt_unref (plt_curr);
+
+                        if (play) {
+                            deadbeef->sendmessage (DB_EV_PLAY_NUM, 0, 0, 0);
+                        }
+                    });
+                }
+                else {
+                    deadbeef->plt_add_files_end (plt, 0);
+                    deadbeef->plt_unref (plt);
+                    deadbeef->plt_unref (plt_curr);
                 }
             });
         }
         else {
             deadbeef->plt_unref (plt);
+            deadbeef->plt_unref (plt_curr);
         }
     }
 }
@@ -480,24 +502,40 @@ main_cleanup_and_quit (void);
     if ( [openDlg runModal] == NSModalResponseOK )
     {
         NSArray* files = openDlg.URLs;
-        ddb_playlist_t *plt = deadbeef->plt_get_curr ();
+        ddb_playlist_t *plt = deadbeef->plt_alloc ("add-folders");
+        ddb_playlist_t *plt_curr = deadbeef->plt_get_curr ();
         if (!deadbeef->plt_add_files_begin (plt, 0)) {
-            dispatch_queue_t aQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
-            dispatch_async(aQueue, ^{
+            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
                 for (NSUInteger i = 0; i < files.count; i++) {
                     NSString *fileName = [files[i] path];
                     if (fileName) {
                         deadbeef->plt_add_dir2 (0, plt, fileName.UTF8String, NULL, NULL);
                     }
                 }
-                deadbeef->plt_add_files_end (plt, 0);
-                deadbeef->plt_unref (plt);
-                deadbeef->pl_save_current();
-                deadbeef->sendmessage (DB_EV_PLAYLISTCHANGED, 0, DDB_PLAYLIST_CHANGE_CONTENT, 0);
+                if (!fileadd_cancelled) {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        ddb_playItem_t *tail = deadbeef->plt_get_tail_item(plt_curr, PL_MAIN);
+                        deadbeef->plt_move_all_items(plt_curr, plt, tail);
+                        if (tail != NULL) {
+                            deadbeef->pl_item_unref (tail);
+                        }
+                        deadbeef->pl_save_current();
+                        ddb_undo->set_action_name ("Add Folders");
+                        deadbeef->plt_add_files_end (plt, 0);
+                        deadbeef->plt_unref (plt);
+                        deadbeef->plt_unref (plt_curr);
+                    });
+                }
+                else {
+                    deadbeef->plt_add_files_end (plt, 0);
+                    deadbeef->plt_unref (plt);
+                    deadbeef->plt_unref (plt_curr);
+                }
             });
         }
         else {
             deadbeef->plt_unref (plt);
+            deadbeef->plt_unref (plt_curr);
         }
     }
 }
@@ -508,22 +546,30 @@ main_cleanup_and_quit (void);
         if (returnCode == NSModalResponseOK) {
             NSString *text = [self.addLocationTextField.stringValue stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
 
-            ddb_playlist_t *plt = deadbeef->plt_get_curr ();
+            ddb_playlist_t *plt = deadbeef->plt_alloc ("add-location");
+            ddb_playlist_t *plt_curr = deadbeef->plt_get_curr ();
             if (!deadbeef->plt_add_files_begin (plt, 0)) {
                 dispatch_queue_t aQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
                 dispatch_async(aQueue, ^{
                     DB_playItem_t *tail = deadbeef->plt_get_last (plt, PL_MAIN);
-                    deadbeef->plt_insert_file2 (0, plt, tail, text.UTF8String, NULL, NULL, NULL);
+                     deadbeef->plt_insert_file2 (0, plt, tail, text.UTF8String, NULL, NULL, NULL);
+                    deadbeef->plt_move_all_items(plt_curr, plt, tail);
                     if (tail) {
                         deadbeef->pl_item_unref (tail);
                     }
-                    deadbeef->plt_add_files_end (plt, 0);
-                    deadbeef->plt_unref (plt);
                     deadbeef->pl_save_current ();
+
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        ddb_undo->set_action_name ("Add Location");
+                        deadbeef->plt_add_files_end (plt, 0);
+                        deadbeef->plt_unref (plt);
+                        deadbeef->plt_unref (plt_curr);
+                    });
                 });
             }
             else {
                 deadbeef->plt_unref (plt);
+                deadbeef->plt_unref (plt_curr);
             }
         }
     }];
@@ -690,10 +736,16 @@ main_cleanup_and_quit (void);
 }
 
 - (int)ddb_message:(int)_id ctx:(uint64_t)ctx p1:(uint32_t)p1 p2:(uint32_t)p2 {
+    if (_id == DB_EV_PLAYLISTCHANGED) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            deadbeef->undo_process();
+        });
+    }
+
     [self.mainWindow.sidebarOutlineViewController.mediaLibraryOutlineViewController  widgetMessage:_id ctx:ctx p1:p1 p2:p2];
 
-        [DesignModeState.sharedInstance.rootWidget message:_id ctx:ctx p1:p1 p2:p2];
-        [self.searchWindow.viewController sendMessage:_id ctx:ctx p1:p1 p2:p2];
+    [DesignModeState.sharedInstance.rootWidget message:_id ctx:ctx p1:p1 p2:p2];
+    [self.searchWindow.viewController sendMessage:_id ctx:ctx p1:p1 p2:p2];
 
     if (_id == DB_EV_CONFIGCHANGED) {
         [self performSelectorOnMainThread:@selector(configChanged) withObject:nil waitUntilDone:NO];
@@ -810,18 +862,32 @@ main_cleanup_and_quit (void);
             return;
         }
         NSString *fname = [files.firstObject path];
-        dispatch_queue_t aQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
-        dispatch_async(aQueue, ^{
-            ddb_playlist_t *plt = deadbeef->plt_get_curr ();
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+            ddb_playlist_t *plt = deadbeef->plt_alloc ("load-playlist");
+            ddb_playlist_t *plt_curr = deadbeef->plt_get_curr ();
+            deadbeef->plt_clear (plt_curr);
+            deadbeef->sendmessage (DB_EV_PLAYLISTCHANGED, 0, DDB_PLAYLIST_CHANGE_CONTENT, 0);
             if (!deadbeef->plt_add_files_begin (plt, 0)) {
-                deadbeef->plt_clear (plt);
                 int abort = 0;
                 deadbeef->plt_load2 (0, plt, NULL, fname.UTF8String, &abort, NULL, NULL);
-                deadbeef->plt_save_config (plt);
-                deadbeef->plt_add_files_end (plt, 0);
+                if (!abort) {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        deadbeef->plt_move_all_items(plt_curr, plt, NULL);
+                        deadbeef->plt_save_config (plt);
+                        deadbeef->plt_add_files_end (plt, 0);
+                        deadbeef->plt_unref (plt);
+                        deadbeef->plt_unref (plt_curr);
+                    });
+                }
+                else {
+                    deadbeef->plt_unref (plt);
+                    deadbeef->plt_unref (plt_curr);
+                }
             }
-            deadbeef->plt_unref (plt);
-            deadbeef->sendmessage (DB_EV_PLAYLISTCHANGED, 0, DDB_PLAYLIST_CHANGE_CONTENT, 0);
+            else {
+                deadbeef->plt_unref (plt);
+                deadbeef->plt_unref (plt_curr);
+            }
         });
     }
 }

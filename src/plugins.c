@@ -68,6 +68,7 @@
 #ifdef __APPLE__
 #include "cocoautil.h"
 #endif
+#include "undo/undomanager.h"
 #include "viz.h"
 
 DB_plugin_t main_plugin = {
@@ -139,6 +140,66 @@ static int num_background_jobs;
 
 static void
 _viz_spectrum_listen_stub (void *ctx, void (*callback)(void *ctx, const ddb_audio_data_t *data)) {
+}
+
+static ddb_undo_hooks_t *_undo_hooks;
+
+static void
+_undo_process(void) {
+    ddb_undomanager_t *undomanager = ddb_undomanager_shared();
+
+    ddb_undobuffer_t *undobuffer = ddb_undomanager_consume_buffer (undomanager);
+
+    int res = -1;
+    if (ddb_undobuffer_has_operations (undobuffer) && _undo_hooks != NULL) {
+        res = _undo_hooks->process_action(undobuffer, ddb_undomanager_get_action_name (undomanager));
+    }
+
+    if (res != 0) {
+        ddb_undobuffer_free (undobuffer);
+    }
+
+    ddb_undomanager_set_action_name (undomanager, NULL);
+}
+
+static void
+_undo_group_begin(void) {
+    ddb_undobuffer_group_begin (ddb_undomanager_get_buffer (ddb_undomanager_shared ()));
+}
+
+static void
+_undo_group_end(void) {
+    ddb_undobuffer_group_end (ddb_undomanager_get_buffer (ddb_undomanager_shared ()));
+}
+
+static void
+_undo_set_action_name (const char *action_name) {
+    ddb_undomanager_set_action_name (ddb_undomanager_shared (), action_name);
+}
+
+static void
+_undo_free_buffer (struct ddb_undobuffer_s *undobuffer) {
+    ddb_undobuffer_free (undobuffer);
+}
+
+static void
+_undo_execute_buffer (struct ddb_undobuffer_s *undobuffer) {
+    ddb_undobuffer_execute (undobuffer, ddb_undomanager_get_buffer(ddb_undomanager_shared()));
+}
+
+static ddb_undo_interface_t _undo_interface = {
+    ._size = sizeof (_undo_interface),
+    .group_begin = _undo_group_begin,
+    .group_end = _undo_group_end,
+    .set_action_name = _undo_set_action_name,
+    .free_buffer = _undo_free_buffer,
+    .execute_buffer = _undo_execute_buffer,
+};
+
+static void
+_register_for_undo (ddb_undo_hooks_t *hooks) {
+    _undo_hooks = hooks;
+    hooks->initialize (&_undo_interface);
 }
 
 // deadbeef api
@@ -534,6 +595,9 @@ static DB_functions_t deadbeef_api = {
     .plt_insert_dir3 = (ddb_playItem_t *(*) (int visibility, uint32_t flags, ddb_playlist_t *plt, ddb_playItem_t *after, const char *dirname, int *pabort, int (*callback)(ddb_insert_file_result_t result, const char *fname, void *user_data), void *user_data))plt_insert_dir3,
 
     .streamer_get_playing_track_safe = (DB_playItem_t *(*) (void))streamer_get_playing_track,
+    .plt_move_all_items = (void (*) (ddb_playlist_t *to, ddb_playlist_t *from, ddb_playItem_t *insert_after))plt_move_all_items,
+    .undo_process = _undo_process,
+    .register_for_undo = _register_for_undo,
 };
 
 DB_functions_t *deadbeef = &deadbeef_api;
