@@ -88,8 +88,8 @@ lfm_send_nowplaying (const char *lfm_nowplaying);
 static void
 lfm_update_auth (void) {
     deadbeef->conf_lock ();
-    const char *user = deadbeef->conf_get_str_fast ("lastfm.login", "");
-    const char *pass = deadbeef->conf_get_str_fast ("lastfm.password", "");
+    const char *user = deadbeef->conf_get_str_fast ("lastfm.secret.login", "");
+    const char *pass = deadbeef->conf_get_str_fast ("lastfm.secret.password", "");
     if (strcmp (user, lfm_user) || strcmp (pass, lfm_pass)) {
         strcpy (lfm_user, user);
         strcpy (lfm_pass, pass);
@@ -147,6 +147,9 @@ curl_req_send (const char *req, const char *post) {
     curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
     curl_easy_setopt (curl, CURLOPT_NOSIGNAL, 1);
     curl_easy_setopt (curl, CURLOPT_PROGRESSFUNCTION, lfm_curl_control);
+#ifdef __MINGW32__
+    curl_easy_setopt (curl, CURLOPT_CAINFO, getenv ("CURL_CA_BUNDLE"));
+#endif
     char ua[100];
     deadbeef->conf_get_str ("network.http_user_agent", "deadbeef", ua, sizeof (ua));
     curl_easy_setopt (curl, CURLOPT_USERAGENT, ua);
@@ -746,8 +749,40 @@ lfm_message (uint32_t id, uintptr_t ctx, uint32_t p1, uint32_t p2) {
     case DB_EV_SONGCHANGED:
         lastfm_songchanged ((ddb_event_trackchange_t *)ctx, 0);
         break;
+    case DB_EV_CONFIGCHANGED:
+        if (deadbeef->conf_get_int ("lastfm.trace", 0)) {
+            plugin.plugin.flags |= DDB_PLUGIN_FLAG_LOGGING;
+        }
+        else {
+            plugin.plugin.flags &= ~DDB_PLUGIN_FLAG_LOGGING;
+        }
+        break;
     }
     return 0;
+}
+
+static void
+_migrate_secrets(void) {
+    const char *user = deadbeef->conf_get_str_fast ("lastfm.secret.login", NULL);
+    const char *pass = deadbeef->conf_get_str_fast ("lastfm.secret.password", NULL);
+
+    if (user == NULL) {
+        user = deadbeef->conf_get_str_fast ("lastfm.login", NULL);
+        if (user != NULL) {
+            deadbeef->conf_set_str("lastfm.secret.login", user);
+            deadbeef->conf_remove_items("lastfm.login");
+        }
+    }
+
+    if (pass == NULL) {
+        pass = deadbeef->conf_get_str_fast ("lastfm.password", NULL);
+        if (pass != NULL) {
+            deadbeef->conf_set_str("lastfm.secret.password", pass);
+            deadbeef->conf_remove_items("lastfm.password");
+        }
+    }
+
+    deadbeef->conf_save();
 }
 
 static int
@@ -755,6 +790,8 @@ lastfm_start (void) {
     terminate = 0;
     request_queue = dispatch_queue_create("LastfmRequestQueue", NULL);
     sync_queue = dispatch_queue_create("LastfmSyncQueue", NULL);
+
+    _migrate_secrets();
 
     return 0;
 }
@@ -873,12 +910,13 @@ lfm_get_actions (DB_playItem_t *it)
 static const char settings_dlg[] =
     "property \"Enable scrobbler\" checkbox lastfm.enable 0;"
     "property \"Disable nowplaying\" checkbox lastfm.disable_np 0;"
-    "property Username entry lastfm.login \"\";\n"
-    "property Password password lastfm.password \"\";"
+    "property Username entry lastfm.secret.login \"\";\n"
+    "property Password password lastfm.secret.password \"\";"
     "property \"Scrobble URL\" entry lastfm.scrobbler_url \""SCROBBLER_URL_LFM"\";"
     "property \"Prefer Album Artist over Artist field\" checkbox lastfm.prefer_album_artist 0;"
     "property \"Send MusicBrainz ID\" checkbox lastfm.mbid 0;"
     "property \"Submit tracks shorter than 30 seconds (not recommended)\" checkbox lastfm.submit_tiny_tracks 0;"
+    "property \"Enable logging\" checkbox lastfm.trace 0;\n";
 ;
 
 // define plugin interface
@@ -887,7 +925,6 @@ static DB_misc_t plugin = {
     .plugin.version_major = 1,
     .plugin.version_minor = 0,
     .plugin.type = DB_PLUGIN_MISC,
-//    .plugin.flags = DDB_PLUGIN_FLAG_LOGGING,
     .plugin.name = "last.fm scrobbler",
     .plugin.descr = "Sends played songs information to your last.fm account, or other service that use AudioScrobbler protocol",
     .plugin.copyright =

@@ -35,6 +35,10 @@
 #import "EqualizerWindowController.h"
 #import "HelpWindowController.h"
 #import "junklib.h"
+#import "KeyboardShortcuts/KeyboardShortcutManager.h"
+#import "KeyboardShortcuts/KeyboardShortcutManager+ViewController.h"
+#import "KeyboardShortcuts/KeyboardShortcutEditorViewController.h"
+#import "KeyboardShortcuts/KeyboardShortcutEditorWindowController.h"
 #import "LogWindowController.h"
 #import "NowPlayable.h"
 #import "NSMenu+ActionItems.h"
@@ -75,7 +79,8 @@ extern DB_functions_t *deadbeef;
 @property (weak) IBOutlet NSMenuItem *designModeMenuItem;
 @property DesignModeState *designModeState;
 
-
+@property (nonatomic) KeyboardShortcutEditorWindowController *keyboardShortcutEditorWindowController;
+@property (nonatomic) KeyboardShortcutEditorViewController *keyboardShortcutEditorViewController;
 
 @end
 
@@ -189,6 +194,7 @@ static int file_added (ddb_fileadd_data_t *data, void *user_data) {
     self.designModeState = DesignModeState.sharedInstance;
     self.mediaLibraryManager = [MediaLibraryManager new];
     [self initMainMenu];
+    [KeyboardShortcutManager.shared updateWithMenu:self.mainMenu];
     [self initMainWindow];
     [self initSearchWindow];
     [self initLogWindow];
@@ -1022,6 +1028,20 @@ main_cleanup_and_quit (void);
 
 - (IBAction)displayTrackProperties:(id)sender {
     [TrackPropertiesManager.shared displayTrackProperties];
+}
+
+- (IBAction)editKeybooardShortcutsAction:(id)sender {
+    if (self.keyboardShortcutEditorWindowController == nil) {
+        self.keyboardShortcutEditorWindowController = [[KeyboardShortcutEditorWindowController alloc] initWithWindowNibName:@"KeyboardShortcutEditorWindowController"];
+        self.keyboardShortcutEditorViewController = [KeyboardShortcutEditorViewController new];
+        self.keyboardShortcutEditorViewController.model = KeyboardShortcutManager.shared;
+        self.keyboardShortcutEditorWindowController.window.contentView = self.keyboardShortcutEditorViewController.view;
+    }
+
+    KeyboardShortcutViewItem *viewItem = [KeyboardShortcutManager.shared createViewItems];
+    [self.keyboardShortcutEditorViewController updateWithViewItem:viewItem];
+
+    [self.keyboardShortcutEditorWindowController showWindow:nil];
 }
 
 @end

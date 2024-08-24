@@ -50,6 +50,7 @@ TEST_C_SOURCES=$(wildcard \
 	shared/*.c \
 	shared/scriptable/*.c \
 	shared/undo/*.c \
+	shared/filereader/*.c \
 	src/*.c \
 	src/ConvertUTF/*.c \
 	src/md5/*.c \
@@ -81,6 +82,7 @@ VPATH=src \
 	shared \
 	shared/scriptable \
 	shared/undo \
+	shared/filereader \
 	Tests
 
 $(BUILD)/%.o: %.c

@@ -1,5 +1,5 @@
 //
-//  MedialibItemDragDropHolder.h
+//  DdbPlayItemPasteboardSerializer.h
 //  DeaDBeeF
 //
 //  Created by Oleksiy Yakovenko on 8/28/20.
@@ -9,10 +9,12 @@
 #import <Foundation/Foundation.h>
 #include <deadbeef/deadbeef.h>
 
-@interface MedialibItemDragDropHolder : NSObject<NSPasteboardReading, NSPasteboardWriting, NSSecureCoding>
+/// Serialize/deserialize an array of playItems as playlist.
+/// The resulting items would not be the same memory locations after serialization,
+/// since they go through playlist saving and loading procedure.
+@interface DdbPlayItemPasteboardSerializer : NSObject<NSPasteboardReading, NSPasteboardWriting, NSSecureCoding>
 
-@property (nonatomic,readonly) ddb_playItem_t * _Nonnull * _Nullable items;
-@property (nonatomic,readonly) NSInteger count;
+@property (nonnull,nonatomic,readonly) ddb_playlist_t *plt;
 
 - (instancetype _Nonnull)init NS_UNAVAILABLE;
 - (instancetype _Nonnull)initWithItem:(ddb_playItem_t * _Nullable)item;

@@ -73,7 +73,7 @@ extern "C" {
 // that there's a better replacement in the newer deadbeef versions.
 
 // API version history:
-// 1.18 -- deadbeef-1.9.7
+// 1.18 -- deadbeef-1.10.0
 // 1.17 -- deadbeef-1.9.6
 // 1.16 -- deadbeef-1.9.4
 // 1.15 -- deadbeef-1.9.0
@@ -139,6 +139,12 @@ extern "C" {
 
 #ifndef DDB_API_LEVEL
 #define DDB_API_LEVEL DB_API_VERSION_MINOR
+#endif
+
+#if (DDB_WARN_DEPRECATED && DDB_API_LEVEL >= 18)
+#define DEPRECATED_118 DDB_DEPRECATED("since deadbeef API 1.18")
+#else
+#define DEPRECATED_118
 #endif
 
 #if (DDB_WARN_DEPRECATED && DDB_API_LEVEL >= 17)
@@ -366,7 +372,7 @@ enum {
     DB_PLUGIN_VFS     = 5,
     DB_PLUGIN_PLAYLIST = 6,
     DB_PLUGIN_GUI = 7,
-#if (DDB_API_LEVEL >= 15)
+#if (DDB_API_LEVEL >= 18)
     DB_PLUGIN_MEDIASOURCE = 8,
 #endif
 };
@@ -651,6 +657,9 @@ enum ddb_sys_directory_t {
 #if (DDB_API_LEVEL >= 13)
     DDB_SYS_DIR_PLUGIN_RESOURCES = 7,
 #endif
+#if (DDB_API_LEVEL >= 18)
+    DDB_SYS_DIR_STATE = 8,
+#endif
 };
 
 // typecasting macros
@@ -851,6 +860,7 @@ typedef struct {
 
 // forward decl for plugin struct
 struct DB_plugin_s;
+typedef struct DB_plugin_s DB_plugin_t;
 
 // player api definition
 typedef struct {
@@ -872,7 +882,7 @@ typedef struct {
 
     // streamer access
     /// This function is unsafe, and has been deprecated in favor of @c streamer_get_playing_track_safe
-    DB_playItem_t *(*streamer_get_playing_track) (void) DEPRECATED_16;
+    DB_playItem_t *(*streamer_get_playing_track) (void) DEPRECATED_116;
     DB_playItem_t *(*streamer_get_streaming_track) (void);
     float (*streamer_get_playpos) (void);
     int (*streamer_ok_to_read) (int len);
@@ -1752,6 +1762,30 @@ typedef struct {
     /// This function can be called only once per session,
     /// usually from the UI plugin's start method.
     void (*register_for_undo) (ddb_undo_hooks_t *undo_hooks);
+
+    /// Get all items from specified playlist as an array, increase reference counts.
+    /// The resulting array must be freed.
+    /// @return number of resulting items
+    size_t (*plt_get_items) (ddb_playlist_t *plt, ddb_playItem_t ***out_items);
+
+    /// Get all selected items from specified playlist as an array, increase reference counts
+    /// The resulting array must be freed.
+    /// @return number of resulting items
+    size_t (*plt_get_selected_items) (ddb_playlist_t *plt, ddb_playItem_t ***out_items);
+
+    /// Load playlist from buffer
+    /// @return 0 on success, -1 on error
+    int (*plt_load_from_buffer) (ddb_playlist_t *plt, const uint8_t *buffer, size_t size);
+
+    /// Save playlist to the buffer.
+    /// The resulting buffer must be freed after use.
+    /// @return buffer size on success, -1 on error
+    ssize_t (*plt_save_to_buffer) (ddb_playlist_t *plt, uint8_t **out_buffer);
+
+    /// Register a plugin for async deinitialization.
+    /// The deinit func will be called before unloading a plugin,
+    /// and the caller will wait until completion block is performed.
+    void (*plug_register_for_async_deinit) (DB_plugin_t *plugin, void (*deinit_func)(void (*completion_callback)(DB_plugin_t *plugin)));
 #endif
 } DB_functions_t;
 
@@ -1863,7 +1897,9 @@ enum {
 #endif
 
 #if (DDB_API_LEVEL >= 15)
-    DDB_PLUGIN_FLAG_ASYNC_STOP = 8,
+    // This flag is deprecated, do not use.
+    // It has been superceded by the API call plug_register_for_async_deinit
+    DDB_PLUGIN_FLAG_ASYNC_STOP DEPRECATED_118 = 8,
 #endif
 };
 #endif
@@ -1872,10 +1908,9 @@ enum {
 /// Reserved command IDs, usable with @c plugin.command method.
 /// The commands with numbers 1000 and up are reserved for internal use.
 enum {
-    // Stop plugin asynchronously.
-    // The plugin is expected to handle this command, if it has the flag @c DDB_PLUGIN_FLAG_ASYNC_STOP.
-    // The command 2nd argument is a void (^completion_block)(void).
-    DDB_COMMAND_PLUGIN_ASYNC_STOP = 1000,
+    // This flag is deprecated, do not use.
+    // It has been superceded by the API call plug_register_for_async_deinit
+    DDB_COMMAND_PLUGIN_ASYNC_STOP DEPRECATED_118 = 1000,
 };
 
 typedef struct ddb_response_s {
@@ -1886,7 +1921,7 @@ typedef struct ddb_response_s {
 #endif
 
 // base plugin interface
-typedef struct DB_plugin_s {
+struct DB_plugin_s {
     // type must be one of DB_PLUGIN_ types
     int32_t type;
     // api version
@@ -1958,7 +1993,7 @@ typedef struct DB_plugin_s {
     // plugin configuration dialog is constructed from this data
     // can be NULL
     const char *configdialog;
-} DB_plugin_t;
+};
 
 // file format stuff
 
@@ -2297,11 +2332,7 @@ typedef struct DB_playlist_s {
 #endif
 } DB_playlist_t;
 
-// NOTE: Media source API is a work in progress, and is disabled in this version of source code.
-// This is to prevent plugin devs from releasing media source plugins, before this API is finalized.
-// Please use the appropriate development branch to test media source plugins.
-// The media source API is a subject to change.
-#if (DDB_API_LEVEL >= 15)
+#if (DDB_API_LEVEL >= 18)
 
 // Mediasource plugin
 // The purpose is to provide access to external media sources.

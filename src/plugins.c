@@ -100,6 +100,7 @@ typedef struct plugin_s {
     void *handle;
     char *filepath;
     DB_plugin_t *plugin;
+    void (*async_deinit)(void (*completion_callback)(DB_plugin_t *plugin));
     struct plugin_s *next;
 } plugin_t;
 
@@ -200,6 +201,16 @@ static void
 _register_for_undo (ddb_undo_hooks_t *hooks) {
     _undo_hooks = hooks;
     hooks->initialize (&_undo_interface);
+}
+
+static void
+_plug_register_for_async_deinit (DB_plugin_t *plugin, void (*deinit_func)(void (*completion_callback)(DB_plugin_t *plugin))) {
+    for (plugin_t *p = plugins; p != NULL; p = p->next) {
+        if (p->plugin == plugin) {
+            p->async_deinit = deinit_func;
+            break;
+        }
+    }
 }
 
 // deadbeef api
@@ -598,6 +609,11 @@ static DB_functions_t deadbeef_api = {
     .plt_move_all_items = (void (*) (ddb_playlist_t *to, ddb_playlist_t *from, ddb_playItem_t *insert_after))plt_move_all_items,
     .undo_process = _undo_process,
     .register_for_undo = _register_for_undo,
+    .plt_get_items = (size_t (*) (ddb_playlist_t *plt, ddb_playItem_t ***out_items))plt_get_items,
+    .plt_get_selected_items = (size_t (*) (ddb_playlist_t *plt, ddb_playItem_t ***out_items))plt_get_selected_items,
+    .plt_load_from_buffer = (int (*) (ddb_playlist_t *plt, const uint8_t *buffer, size_t size))plt_load_from_buffer,
+    .plt_save_to_buffer = (ssize_t (*) (ddb_playlist_t *plt, uint8_t **out_buffer))plt_save_to_buffer,
+    .plug_register_for_async_deinit = _plug_register_for_async_deinit,
 };
 
 DB_functions_t *deadbeef = &deadbeef_api;
@@ -644,6 +660,8 @@ plug_get_system_dir (int dir_id) {
         return dbcachedir;
     case DDB_SYS_DIR_PLUGIN_RESOURCES:
         return dbresourcedir;
+    case DDB_SYS_DIR_STATE:
+        return dbstatedir;
     }
     return NULL;
 }
@@ -1374,7 +1392,10 @@ static int _async_stop_count = 0;
 static void (^_async_stop_completion_block)(void);
 
 static void
-_handle_async_stop (void) {
+_handle_async_stop (DB_plugin_t *plugin) {
+    if (plugin != NULL) {
+        trace ("Stopped %s...\n", plugin->name);
+    }
     _async_stop_count -= 1;
     if (_async_stop_count == 0) {
         _plug_unload_stop_complete();
@@ -1383,9 +1404,10 @@ _handle_async_stop (void) {
 
 static void
 _plug_unload_stop_complete (void) {
+    trace ("All async plugins have stopped.\n");
     // Stop the normal plugins with synchronous stop
     for (plugin_t *p = plugins; p; p = p->next) {
-        if (p->plugin->stop && !(p->plugin->flags & DDB_PLUGIN_FLAG_ASYNC_STOP)) {
+        if (p->plugin->stop && p->async_deinit == NULL) {
             trace ("Stopping %s...\n", p->plugin->name);
             fflush (stderr);
 #if HAVE_COCOAUI
@@ -1437,20 +1459,15 @@ plug_unload_all (void(^completion_block)(void)) {
     _async_stop_completion_block = Block_copy(completion_block);
     action_set_playlist (NULL);
     trace ("plug_unload_all\n");
-    trace ("Waiting for async plugins to finish...\n");
+    trace ("Stopping async plugins...\n");
     _async_stop_count = 1;
     for (plugin_t *p = plugins; p; p = p->next) {
-        if ((p->plugin->flags & DDB_PLUGIN_FLAG_ASYNC_STOP) && p->plugin->command) {
+        if (p->async_deinit != NULL) {
             _async_stop_count += 1;
-            if (0 > p->plugin->command(DDB_COMMAND_PLUGIN_ASYNC_STOP, ^{
-                trace ("Stopped %s...\n", p->plugin->name);
-                _handle_async_stop();
-            })) {
-                _async_stop_count -= 1;
-            }
+            p->async_deinit(_handle_async_stop);
         }
     }
-    _handle_async_stop();
+    _handle_async_stop(NULL);
 }
 
 void
