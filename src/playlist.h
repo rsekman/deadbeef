@@ -556,9 +556,6 @@ playItem_t *
 plt_get_tail_item(playlist_t *p, int iter);
 
 int
-pl_items_from_same_album(playItem_t* a, playItem_t* b);
-
-int
 pl_get_played (playItem_t *it);
 
 void
