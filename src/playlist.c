@@ -2398,12 +2398,26 @@ pl_save_all (void) {
 }
 
 static int
+_interpret_relative_path(const char *dname, const char *uri, char *true_uri, size_t count) {
+    if (dname && is_relative_path (uri)) {
+        return snprintf (true_uri, count, "%s/%s", dname, uri);
+    } else {
+        return snprintf (true_uri, count, "%s", uri);
+    }
+}
+
+static int
 _plt_load_from_file (playlist_t *plt, const char *fname, ddb_file_handle_t *fp, playItem_t **last_added) {
     int result = -1;
     playItem_t *it = NULL;
     uint8_t majorver;
     uint8_t minorver;
     char magic[4];
+
+    char *dname = NULL;
+    char *true_uri = calloc(PATH_MAX, sizeof(char));
+    // must be allocated here to be unconditionally free() at the end of the function
+
     if (ddb_file_read (magic, 1, 4, fp) != 4) {
         //        trace ("failed to read magic\n");
         goto load_fail;
@@ -2431,10 +2445,9 @@ _plt_load_from_file (playlist_t *plt, const char *fname, ddb_file_handle_t *fp, 
         goto load_fail;
     }
 
-    char dname[PATH_MAX] = "";
     char *slash = strrchr (fname, '/');
     if (slash && fname) {
-        strncpy (dname, fname, slash - fname);
+        dname = strndup (fname, slash - fname);
     }
 
     for (uint32_t i = 0; i < cnt; i++) {
@@ -2455,13 +2468,8 @@ _plt_load_from_file (playlist_t *plt, const char *fname, ddb_file_handle_t *fp, 
                 goto load_fail;
             }
             uri[l] = 0;
-            if (dname[0] && is_relative_path (uri)) {
-                snprintf (true_uri, sizeof (true_uri), "%s/%s", dname, uri);
-                pl_add_meta (it, ":URI", true_uri);
-            }
-            else {
-                pl_add_meta (it, ":URI", uri);
-            }
+            _interpret_relative_path(dname, uri, true_uri, PATH_MAX);
+            pl_add_meta (it, ":URI", true_uri);
             // decoder
             uint8_t ll;
             if (ddb_file_read (&ll, 1, 1, fp) != 1) {
@@ -2609,6 +2617,9 @@ _plt_load_from_file (playlist_t *plt, const char *fname, ddb_file_handle_t *fp, 
                         // here, we delete what was set from legacy, and overwrite with metadata
                         if (strcmp (key, ":URI") != 0) {
                             pl_replace_meta (it, key, value);
+                        } else {
+                            _interpret_relative_path(dname, value, true_uri, PATH_MAX);
+                            pl_replace_meta (it, key, true_uri);
                         }
                     }
                 }
@@ -2670,6 +2681,8 @@ load_fail:
         pl_item_unref (it);
         it = NULL;
     }
+    free (dname);
+    free (true_uri);
     return result;
 }
 

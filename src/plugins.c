@@ -1884,10 +1884,12 @@ void
 plug_register_in (DB_plugin_t *inplug) {
     int i;
     for (i = 0; g_plugins[i]; i++);
+    assert(i < MAX_PLUGINS);
     g_plugins[i++] = inplug;
     g_plugins[i] = NULL;
 
     for (i = 0; g_decoder_plugins[i]; i++);
+    assert(i < MAX_DECODER_PLUGINS);
     g_decoder_plugins[i++] = (DB_decoder_t *)inplug;
     g_decoder_plugins[i] = NULL;
 }
@@ -1897,10 +1899,12 @@ void
 plug_register_out (DB_plugin_t *outplug) {
     int i;
     for (i = 0; g_plugins[i]; i++);
+    assert(i < MAX_PLUGINS);
     g_plugins[i++] = outplug;
     g_plugins[i] = NULL;
 
     for (i = 0; g_output_plugins[i]; i++);
+    assert(i < MAX_OUTPUT_PLUGINS);
     g_output_plugins[i++] = (DB_output_t *)outplug;
     g_output_plugins[i] = NULL;
 }
