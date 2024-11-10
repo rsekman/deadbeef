@@ -23,7 +23,7 @@ INCLUDE=-I external/googletest/googletest \
 	-I plugins/coreaudio \
 	-I$(STATIC_ROOT)/include
 
-CFLAGS=-fblocks -fcommon -O3 $(INCLUDE) \
+CFLAGS=-fblocks -fcommon -O3 -gdwarf $(INCLUDE) \
 	-D_FORTIFY_SOURCE=0 \
 	-D_GNU_SOURCE \
 	-DHAVE_LOG2=1 \
@@ -99,7 +99,7 @@ $(BUILD)/runtests: $(TEST_C_OBJS) $(GOOGLE_TEST_OBJS) $(TEST_CPP_OBJS)
 	$(CXX) $(LDFLAGS) $(TEST_C_OBJS) $(GOOGLE_TEST_OBJS) $(TEST_CPP_OBJS) $(LIBRARIES) -o $@
 
 runtests: $(BUILD)/runtests
-	mkdir $(BUILD)/Tests
+	mkdir -p $(BUILD)/Tests
 	cp -r Tests/TestData $(BUILD)/Tests/
 	cp -r Tests/PresetManagerData $(BUILD)/Tests/
 	cd $(BUILD) ; ./runtests

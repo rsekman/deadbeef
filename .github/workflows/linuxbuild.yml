@@ -33,9 +33,9 @@ jobs:
           gh_ed25519_key: ${{ secrets.GH_ENCRYPTED_ED25519_KEY }}
           gh_ed25519_iv: ${{ secrets.GH_ENCRYPTED_ED25519_IV }}
       run: TRAVIS_OS_NAME=linux travis/upload.sh
-    - name: Upload artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: linux
-        path: portable_out/build/*.tar.bz2
+#    - name: Upload artifact
+#      uses: actions/upload-artifact@v4
+#      with:
+#        name: linux
+#        path: portable_out/build/*.tar.bz2
 
