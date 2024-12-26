@@ -1876,10 +1876,6 @@ pl_item_copy (playItem_t *out, playItem_t *it) {
     out->endsample64 = it->endsample64;
     out->shufflerating = it->shufflerating;
     out->_duration = it->_duration;
-    out->next[PL_MAIN] = it->next[PL_MAIN];
-    out->prev[PL_MAIN] = it->prev[PL_MAIN];
-    out->next[PL_SEARCH] = it->next[PL_SEARCH];
-    out->prev[PL_SEARCH] = it->prev[PL_SEARCH];
 
     for (DB_metaInfo_t *meta = it->meta; meta; meta = meta->next) {
         pl_add_meta_copy (out, meta);
@@ -2271,11 +2267,32 @@ plt_save(
                 if (exts && plug[i]->save) {
                     for (int e = 0; exts[e]; e++) {
                         if (!strcasecmp (exts[e], ext + 1)) {
+                            if (first == NULL) {
+                                first = plt_get_first(plt, PL_MAIN);
+                            }
+                            else {
+                                pl_item_ref(first);
+                            }
+                            if (last == NULL) {
+                                last = plt_get_last(plt, PL_MAIN);
+                            }
+                            else {
+                                pl_item_ref(last);
+                            }
+
                             int res = plug[i]->save (
                                 (ddb_playlist_t *)plt,
                                 fname,
                                 (DB_playItem_t *)first,
                                 (DB_playItem_t *)last);
+
+                            if (first != NULL) {
+                                pl_item_unref(first);
+                            }
+                            if (last != NULL) {
+                                pl_item_unref(last);
+                            }
+
                             UNLOCK;
                             return res;
                         }

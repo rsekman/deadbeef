@@ -160,6 +160,9 @@ static const int close_btn_left_offs = 8;
 }
 
 - (NSColor *)tabBackgroundColor {
+    if (@available(macOS 13.0, *)) {
+        return NSColor.selectedTextBackgroundColor;
+    }
     NSString *osxMode = [NSUserDefaults.standardUserDefaults stringForKey:@"AppleInterfaceStyle"];
     BOOL isKey = self.window.isKeyWindow;
     if ([osxMode isEqualToString:@"Dark"]) {
@@ -205,15 +208,17 @@ static const int close_btn_left_offs = 8;
     [NSNotificationCenter.defaultCenter addObserver:self
                                            selector:@selector(windowDidBecomeKey:)
                                                name:NSWindowDidBecomeKeyNotification
-                                             object:self.window];
+                                             object:nil];
     [NSNotificationCenter.defaultCenter addObserver:self
                                            selector:@selector(windowDidBecomeKey:)
                                                name:NSWindowDidResignKeyNotification
-                                             object:self.window];
+                                             object:nil];
 }
 
-- (void)windowDidBecomeKey:(id)sender {
-    self.needsDisplay = YES;
+- (void)windowDidBecomeKey:(NSNotification *)notification {
+    if (notification.object == self.window) {
+        self.needsDisplay = YES;
+    }
 }
 
 - (int)tabWidthForIndex:(int)tab {
