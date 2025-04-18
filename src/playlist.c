@@ -688,6 +688,8 @@ plt_set_title (playlist_t *p, const char *title) {
     LOCK;
     free (p->title);
     p->title = strdup (title);
+    plt_replace_meta(p, "title", title);
+    p->modification_idx++;
     plt_gen_conf ();
     UNLOCK;
     conf_save ();
