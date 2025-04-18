@@ -89,6 +89,7 @@
 #include "playqueue.h"
 #include "tf.h"
 #include "logger.h"
+#include "metacache.h"
 
 #ifdef OSX_APPBUNDLE
 #    include "scriptable/scriptable.h"
@@ -1112,11 +1113,15 @@ main_cleanup_and_quit (void) {
 
         conf_free ();
 
+        tf_deinit ();
+
         trace ("messagepump_free\n");
         messagepump_free ();
         trace ("plug_cleanup\n");
         plug_cleanup ();
         trace ("logger_free\n");
+
+        metacache_deinit ();
 
         trace ("💛💙\n");
         ddb_logger_free ();
@@ -1142,6 +1147,41 @@ mainloop_thread (void *ctx) {
     }
 
     return;
+}
+
+static int
+mkdir_recursive(const char *path) {
+    char *tmp = strdup(path);
+    if (tmp == NULL) {
+        return -1;
+    }
+
+    char *p = tmp;
+
+    do {
+        while (*p == '/') {
+            p++;
+        }
+
+        p = strchr(p, '/');
+
+        if (p != NULL) {
+            *p = '\0';
+        }
+
+        if (mkdir(tmp, 0755) != 0 && errno != EEXIST) {
+            free(tmp);
+            return -1;
+        }
+
+        if (p != NULL) {
+            *p = '/';
+        }
+
+    } while (p != NULL);
+
+    free(tmp);
+    return 0;
 }
 
 int
@@ -1289,7 +1329,7 @@ main (int argc, char *argv[]) {
             return -1;
         }
     }
-    mkdir (confdir, 0755);
+    (void)mkdir_recursive (confdir);
 
 #if __APPLE__
     char appcachepath[PATH_MAX];
@@ -1330,7 +1370,7 @@ main (int argc, char *argv[]) {
             trace_err ("fatal: cache path is too long: %s\n", dbruntimedir);
             return -1;
         }
-        mkdir (dbruntimedir, 0755);
+        (void)mkdir_recursive (dbruntimedir);
     }
     else {
         strcpy (dbruntimedir, dbconfdir);
@@ -1354,7 +1394,7 @@ main (int argc, char *argv[]) {
             return -1;
         }
 #endif
-        mkdir (dbplugindir, 0755);
+        (void)mkdir_recursive (dbplugindir);
     }
     else {
         if (snprintf (dbplugindir, sizeof (dbplugindir), "%s/deadbeef", LIBDIR) > (int)sizeof (dbplugindir)) {
@@ -1372,7 +1412,7 @@ main (int argc, char *argv[]) {
             return -1;
         }
 #endif
-        mkdir (dbresourcedir, 0755);
+        (void)mkdir_recursive (dbresourcedir);
     }
     else {
         strcpy (dbresourcedir, dbplugindir);
@@ -1416,10 +1456,6 @@ main (int argc, char *argv[]) {
 #if __APPLE__
     char statedir[PATH_MAX];
     cocoautil_get_application_support_path (statedir, sizeof (statedir));
-    mkdir(statedir, 0755);
-    char temp[PATH_MAX];
-    snprintf(temp, sizeof(temp), "%s/Deadbeef", statedir);
-    mkdir(temp, 0755);
     if (snprintf (dbstatedir, sizeof (dbstatedir), "%s/Deadbeef/State", statedir) > (int)sizeof (dbstatedir)) {
         trace_err ("fatal: state path is too long: %s\n", dbstatedir);
         return -1;
@@ -1427,24 +1463,19 @@ main (int argc, char *argv[]) {
 #else
     const char *xdg_state = getenv (STATEDIR);
     if (xdg_state != NULL) {
-        mkdir (xdg_state, 0755);
         if (snprintf (dbstatedir, sizeof (dbstatedir), "%s/deadbeef", xdg_state) > (int)sizeof (dbstatedir)) {
             trace_err ("fatal: state path is too long: %s\n", dbstatedir);
             return -1;
         }
     }
     else {
-        char temp[PATH_MAX];
-        snprintf(temp, sizeof(temp), "%s/.local/state", homedir);
-        mkdir (temp, 0755);
         if (snprintf (dbstatedir, sizeof (dbstatedir), "%s/.local/state/deadbeef", homedir) > (int)sizeof (dbstatedir)) {
             trace_err ("fatal: state path is too long: %s\n", dbstatedir);
             return -1;
         }
     }
 #endif
-    mkdir (dbstatedir, 0755);
-
+    (void)mkdir_recursive (dbstatedir);
 
     const char *plugname = "main";
     for (int i = 1; i < argc; i++) {
@@ -1494,7 +1525,7 @@ main (int argc, char *argv[]) {
     }
 #endif
 
-    mkdir (dbconfdir, 0755);
+    (void)mkdir_recursive (dbconfdir);
 
     int size = 0;
     char *cmdline = prepare_command_line (argc, argv, &size);
@@ -1580,6 +1611,8 @@ main (int argc, char *argv[]) {
     _touch (crash_marker);
 #endif
 
+    metacache_init ();
+    tf_init ();
     pl_init ();
     conf_init ();
     conf_load (); // required by some plugins at startup

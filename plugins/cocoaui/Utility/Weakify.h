@@ -1,6 +1,6 @@
 /*
-    KDE StatusNotifier plugin for DeaDBeeF
-    Copyright (C) 2015 Giulio Bernardi
+    DeaDBeeF -- the music player
+    Copyright (C) 2009-2025 Oleksiy Yakovenko and other contributors
 
     This software is provided 'as-is', without any express or implied
     warranty.  In no event will the authors be held liable for any damages
@@ -20,15 +20,15 @@
 
     3. This notice may not be removed or altered from any source distribution.
 */
-#ifndef _DDB_STATUSNOTIFIER_H
-#define _DDB_STATUSNOTIFIER_H
 
-#include "../../deadbeef.h"
-#include "../gtkui/gtkui_api.h"
+#define weakify(obj) \
+_Pragma("clang diagnostic push") \
+_Pragma("clang diagnostic ignored \"-Wshadow\"") \
+__weak __typeof__(obj) weak##obj = obj; \
+_Pragma("clang diagnostic pop")
 
-typedef struct {
-    DB_misc_t plugin;
-} DB_statusnotifier_plugin_t;
-
-#endif /*_DDB_STATUSNOTIFIER_H*/
-
+#define strongify(obj) \
+_Pragma("clang diagnostic push") \
+_Pragma("clang diagnostic ignored \"-Wshadow\"") \
+__strong __typeof__(obj) obj = weak##obj; \
+_Pragma("clang diagnostic pop")

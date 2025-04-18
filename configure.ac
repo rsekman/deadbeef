@@ -111,6 +111,7 @@ AC_ARG_ENABLE(wavpack,  [AS_HELP_STRING([--disable-wavpack ], [disable wavpack p
 AC_ARG_ENABLE(cdda,     [AS_HELP_STRING([--disable-cdda    ], [disable CD-Audio plugin (default: enabled)])], [enable_cdda=$enableval], [enable_cdda=yes])
 AC_ARG_ENABLE(cdda-paranoia,     [AS_HELP_STRING([--disable-cdda-paranoia    ], [disable CD-Audio error correction during ripping (default: enabled)])], [enable_cdda_paranoia=$enableval], [enable_cdda_paranoia=yes])
 AC_ARG_ENABLE(gme,      [AS_HELP_STRING([--disable-gme     ], [disable Game Music Emu plugin for NSF, AY, etc (default: enabled)])], [enable_gme=$enableval], [enable_gme=yes])
+AC_ARG_ENABLE(lyrics, [AS_HELP_STRING([--enable-lyrics      ], [build lyrics viewer gui plugin (default: auto)])], [enable_lyrics=$enableval], [enable_lyrics=yes])
 AC_ARG_ENABLE(notify,   [AS_HELP_STRING([--disable-notify  ], [disable notification-daemon support plugin (default: enabled)])], [enable_notify=$enableval], [enable_notify=yes])
 AC_ARG_ENABLE(shellexec, [AS_HELP_STRING([--disable-shellexec], [disable shell commands plugin (default: enabled)])], [enable_shellexec=$enableval], [enable_shellexec=yes])
 AC_ARG_ENABLE(musepack, [AS_HELP_STRING([--disable-musepack], [disable musepack plugin (default: enabled)])], [enable_musepack=$enableval], [enable_musepack=yes])
@@ -136,7 +137,6 @@ AC_ARG_ENABLE(wma, [AS_HELP_STRING([--enable-wma      ], [build WMA plugin (defa
 AC_ARG_ENABLE(pltbrowser, [AS_HELP_STRING([--enable-pltbrowser      ], [build playlist browser gui plugin (default: auto)])], [enable_pltbrowser=$enableval], [enable_pltbrowser=yes])
 AC_ARG_ENABLE(sc68, [AS_HELP_STRING([--enable-sc68     ], [build sc68 Atari ST and Amiga music player (default: auto)])], [enable_sc68=$enableval], [enable_sc68=yes])
 AC_ARG_ENABLE(abstract_socket, [AS_HELP_STRING([--enable-abstract-socket      ], [use abstract UNIX socket for IPC (default: disabled)])], [enable_abstract_socket=$enableval], [enable_abstract_socket=no])
-dnl AC_ARG_ENABLE(statusnotifier, [AS_HELP_STRING([--enable-statusnotifier], [KDE status notifier plugin for tray icon (default: disabled)])], [enable_statusnotifier=$enableval], [enable_statusnotifier=no])
 AC_ARG_ENABLE(rgscanner, [AS_HELP_STRING([--disable-rgscanner], [build ReplayGain scanner plugin (default: enabled)])], [enable_rgscanner=$enableval], [enable_rgscanner=yes])
 AC_ARG_ENABLE(soundtouch,   [AS_HELP_STRING([--disable-soundtouch  ], [disable soundtouch plugin (default: enabled)])], [enable_soundtouch=$enableval], [enable_soundtouch=yes])
 
@@ -372,6 +372,11 @@ AS_IF([test "${have_iconv}" = "yes"], [
 AX_CHECK_COMPILER_FLAGS(-msse2, HAVE_SSE2=1, [], -Werror)
 AS_IF([test "${HAVE_SSE2}"], [
     AC_DEFINE(HAVE_SSE2,1,[Support SSE2 instructions])
+])
+
+AX_CHECK_COMPILER_FLAGS(-msse3, HAVE_SSE3=1, [], -Werror)
+AS_IF([test "${HAVE_SSE3}"], [
+    AC_DEFINE(HAVE_SSE3,1,[Support SSE3 instructions])
 ])
 
 dnl curl lib
@@ -803,6 +808,10 @@ AS_IF([test "${enable_converter}" != "no"], [
     ])
 ])
 
+AS_IF([test "${enable_lyrics}" != "no"], [
+    HAVE_LYRICS=yes
+])
+
 AS_IF([test "${enable_medialib}" != "no"], [
     HAVE_MEDIALIB=yes
 ])
@@ -839,19 +848,6 @@ AS_IF([test "${enable_sc68}" != "no" -a "${HAVE_ZLIB}" = "yes"], [
     HAVE_SC68=yes
 ])
 
-dnl AS_IF([test "${enable_statusnotifier}" != "no"], [
-dnl     echo "Checking statusnotifier deps..."
-dnl     AS_IF([test "${enable_staticlink}" != "no"], [
-dnl         HAVE_STATUSNOTIFIER=yes
-dnl         STATUSNOTIFIER_DEPS_CFLAGS="${GTK3_310_CFLAGS}"
-dnl         STATUSNOTIFIER_DEPS_LIBS="${GTK3_310_LIBS}"
-dnl         AC_SUBST(STATUSNOTIFIER_DEPS_CFLAGS)
-dnl         AC_SUBST(STATUSNOTIFIER_DEPS_LIBS)
-dnl     ], [
-dnl         PKG_CHECK_MODULES(STATUSNOTIFIER_DEPS, glib-2.0 >= 2.26 gio-2.0 gdk-pixbuf-2.0, HAVE_STATUSNOTIFIER=yes, HAVE_STATUSNOTIFIER=no)
-dnl     ])
-dnl ])
-
 AS_IF([test "${enable_rgscanner}" != "no"], [
     HAVE_RGSCANNER=yes
 ])
@@ -860,7 +856,7 @@ AS_IF([test "${enable_soundtouch}" != "no"], [
     HAVE_SOUNDTOUCH=yes
 ])
 
-PLUGINS_DIRS="plugins/liboggedit plugins/libparser plugins/lastfm plugins/mp3 plugins/vorbis plugins/opus plugins/flac plugins/wavpack plugins/sndfile plugins/vfs_curl plugins/cdda plugins/gtkui plugins/alsa plugins/ffmpeg plugins/hotkeys plugins/oss plugins/artwork plugins/adplug plugins/ffap plugins/sid plugins/nullout plugins/supereq plugins/vtx plugins/gme plugins/pulse plugins/notify plugins/musepack plugins/wildmidi plugins/tta plugins/dca plugins/aac plugins/mms plugins/shellexec plugins/shellexecui plugins/dsp_libsrc plugins/m3u plugins/vfs_zip plugins/converter plugins/dumb plugins/shn plugins/psf plugins/mono2stereo plugins/alac plugins/wma plugins/pltbrowser plugins/coreaudio plugins/sc68 plugins/rg_scanner plugins/soundtouch plugins/medialib"
+PLUGINS_DIRS="plugins/liboggedit plugins/libparser plugins/lastfm plugins/mp3 plugins/vorbis plugins/opus plugins/flac plugins/wavpack plugins/sndfile plugins/vfs_curl plugins/cdda plugins/gtkui plugins/alsa plugins/ffmpeg plugins/hotkeys plugins/oss plugins/artwork plugins/adplug plugins/ffap plugins/sid plugins/nullout plugins/supereq plugins/vtx plugins/gme plugins/pulse plugins/notify plugins/musepack plugins/wildmidi plugins/tta plugins/dca plugins/aac plugins/mms plugins/shellexec plugins/shellexecui plugins/dsp_libsrc plugins/m3u plugins/vfs_zip plugins/converter plugins/dumb plugins/shn plugins/psf plugins/mono2stereo plugins/alac plugins/wma plugins/pltbrowser plugins/coreaudio plugins/sc68 plugins/rg_scanner plugins/soundtouch plugins/medialib plugins/lyrics"
 
 AM_CONDITIONAL(APE_USE_YASM, test "x$APE_USE_YASM" = "xyes")
 AM_CONDITIONAL(HAVE_VORBIS, test "x$HAVE_VORBISPLUGIN" = "xyes")
@@ -894,6 +890,7 @@ AM_CONDITIONAL(HAVE_HOTKEYS, test "x$HAVE_HOTKEYS" = "xyes")
 AM_CONDITIONAL(HAVE_MP3, test "x$HAVE_MP3" = "xyes")
 AM_CONDITIONAL(HAVE_LIBMAD, test "x$HAVE_LIBMAD" = "xyes")
 AM_CONDITIONAL(HAVE_LIBMPG123, test "x$HAVE_LIBMPG123" = "xyes")
+AM_CONDITIONAL(HAVE_LYRICS, test "x$HAVE_LYRICS" = "xyes")
 AM_CONDITIONAL(HAVE_OSS, test "x$HAVE_OSS" = "xyes")
 AM_CONDITIONAL(HAVE_SUPEREQ, test "x$HAVE_SUPEREQ" = "xyes")
 AM_CONDITIONAL(HAVE_NOTIFY, test "x$HAVE_NOTIFY" = "xyes")
@@ -926,7 +923,7 @@ AM_CONDITIONAL(PORTABLE, test "x$PORTABLE" = "xyes")
 AM_CONDITIONAL(PORTABLE_FULL, test "x$PORTABLE_FULL" = "xyes")
 AM_CONDITIONAL(USE_ABSTRACT_SOCKET_NAME, test "x$USE_ABSTRACT_SOCKET_NAME" = "xyes")
 AM_CONDITIONAL(HAVE_SSE2, test "${HAVE_SSE2}")
-dnl AM_CONDITIONAL(HAVE_STATUSNOTIFIER, test "x$HAVE_STATUSNOTIFIER" = "xyes")
+AM_CONDITIONAL(HAVE_SSE3, test "${HAVE_SSE3}")
 AM_CONDITIONAL(HAVE_RGSCANNER, test "x$HAVE_RGSCANNER" = "xyes")
 AM_CONDITIONAL(HAVE_SOUNDTOUCH, test "x$HAVE_SOUNDTOUCH" = "xyes")
 
@@ -996,6 +993,7 @@ plugins/coreaudio/Makefile
 plugins/rg_scanner/Makefile
 plugins/soundtouch/Makefile
 plugins/medialib/Makefile
+plugins/lyrics/Makefile
 po/Makefile.in
 intl/Makefile
 deadbeef.desktop
@@ -1045,6 +1043,7 @@ PRINT_PLUGIN_INFO([gtkui],[GTK2 user interface],[test "x$HAVE_GTK2" = "xyes"])
 PRINT_PLUGIN_INFO([hotkeys],[Local and global hotkeys support],[test "x$HAVE_HOTKEYS" = "xyes"])
 PRINT_PLUGIN_INFO([lastfm],[last.fm scrobbler],[test "x$HAVE_LASTFM" = "xyes"])
 PRINT_PLUGIN_INFO([libretro],[Libretro resampler plugin],[test "x$HAVE_LIBRETRO" = "xyes"])
+PRINT_PLUGIN_INFO([lyrics],[lyrics viewer gui plugin],[test "x$HAVE_LYRICS" = "xyes"])
 PRINT_PLUGIN_INFO([m3u],[M3U and PLS playlist support],[test "x$HAVE_M3U" = "xyes"])
 PRINT_PLUGIN_INFO([medialib],[Media library],[test "x$HAVE_MEDIALIB" = "xyes"])
 PRINT_PLUGIN_INFO([mms],[mms streaming support],[test "x$HAVE_MMS" = "xyes"])
@@ -1079,6 +1078,5 @@ PRINT_PLUGIN_INFO([vtx],[vtx file player (ay8910/12 emulation)],[test "x$HAVE_VT
 PRINT_PLUGIN_INFO([wavpack],[wavpack player],[test "x$HAVE_WAVPACKPLUGIN" = "xyes"])
 PRINT_PLUGIN_INFO([wildmidi],[WildMidi player plugin],[test "x$HAVE_WILDMIDI" = "xyes"])
 PRINT_PLUGIN_INFO([wma],[WMA plugin],[test "x$HAVE_WMA" = "xyes"])
-dnl PRINT_PLUGIN_INFO([statusnotifier],[plugin for KDE tray icon support],[test "x$HAVE_STATUSNOTIFIER" = "xyes"])
 
 echo

@@ -48,7 +48,7 @@ ml_index (scanner_state_t *scanner, const ml_scanner_configuration_t *conf, int 
     struct timeval tm1, tm2;
     gettimeofday (&tm1, NULL);
 
-    for (int i = 0; i < scanner->track_count && (!can_terminate || !scanner->source->scanner_terminate); i++) {
+    for (int i = 0; i < scanner->track_count && (!can_terminate || !(scanner->source->scanner_terminate || scanner->source->deleting_source)); i++) {
         ddb_playItem_t *it = scanner->tracks[i];
 
         const char *uri = deadbeef->pl_find_meta (it, ":URI");
@@ -299,6 +299,7 @@ scanner_thread (medialib_source_t *source, ml_scanner_configuration_t conf) {
     dispatch_sync(source->sync_queue, ^{
         deadbeef->plt_unref (source->ml_playlist);
         source->ml_playlist = new_plt;
+        source->playlist_modification_idx++;
         ml_db_free(&source->db);
         memcpy (&source->db, &scanner.db, sizeof (ml_db_t));
 

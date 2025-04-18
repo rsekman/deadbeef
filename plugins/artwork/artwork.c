@@ -303,6 +303,13 @@ dir_scan_results (struct dirent *entry, const char *container, ddb_cover_info_t 
     return -1;
 }
 
+static int _dirent_alpha_cmp_func(const void *a, const void *b) {
+    struct dirent * const *fa = a;
+    struct dirent * const *fb = b;
+
+    return strcmp((*fa)->d_name, (*fb)->d_name);
+}
+
 static int
 scan_local_path (const char *local_path, const char *uri, DB_vfs_t *vfsplug, ddb_cover_info_t *cover) {
     struct dirent **files = NULL;
@@ -322,7 +329,13 @@ scan_local_path (const char *local_path, const char *uri, DB_vfs_t *vfsplug, ddb
 
     int err = -1;
 
-    if (files != NULL) {
+    if (files != NULL && files_count > 0) {
+
+        // sort resulting files alphabetically, to ensure that numbered covers are prioritized correctly
+        struct dirent **sorted_files = calloc(files_count, sizeof (struct dirent *));
+        memcpy (sorted_files, files, files_count * sizeof (struct dirent *));
+        qsort(sorted_files, files_count, sizeof (struct dirent *), _dirent_alpha_cmp_func);
+
         const char *filemask_end = filemask + strlen (filemask);
         char *p;
         while ((p = strrchr (filemask, ';'))) {
@@ -331,12 +344,12 @@ scan_local_path (const char *local_path, const char *uri, DB_vfs_t *vfsplug, ddb
 
         for (char *mask = filemask; mask < filemask_end; mask += strlen (mask) + 1) {
             for (int i = 0; i < files_count; i++) {
-                if (!fnmatch (mask, files[i]->d_name, FNM_CASEFOLD)) {
+                if (!fnmatch (mask, sorted_files[i]->d_name, FNM_CASEFOLD)) {
                     if (uri) {
-                        err = vfs_scan_results (files[i], uri, cover, mask);
+                        err = vfs_scan_results (sorted_files[i], uri, cover, mask);
                     }
                     else {
-                        err = dir_scan_results (files[i], local_path, cover);
+                        err = dir_scan_results (sorted_files[i], local_path, cover);
                     }
                 }
                 if (!err) {
@@ -347,6 +360,7 @@ scan_local_path (const char *local_path, const char *uri, DB_vfs_t *vfsplug, ddb
                 break;
             }
         }
+        free (sorted_files);
         for (size_t i = 0; i < files_count; i++) {
             free (files[i]);
         }
@@ -822,6 +836,21 @@ _consume_blob (ddb_cover_info_t *cover, const char *cache_path) {
 // Web cover: save_to_local ? save_to_local&return_path : save_to_cache&return_path
 static void
 process_query (ddb_cover_info_t *cover) {
+    // If all sources are off: just return / do nothing.
+    if (!artwork_enable_local
+        && !artwork_enable_embedded
+        && !artwork_enable_lfm
+        && !artwork_enable_wos
+#    if ENABLE_MUSICBRAINZ
+        && !artwork_enable_mb
+#    endif
+#   if ENABLE_ALBUMART_ORG
+        && !artwork_enable_aao
+#   endif
+        ) {
+        return;
+    }
+
     int islocal = deadbeef->is_local_file (cover->priv->filepath);
 
     struct stat cache_stat;
@@ -1013,6 +1042,8 @@ process_query (ddb_cover_info_t *cover) {
         return;
     }
     else {
+        unlink (cover->priv->track_cache_path);
+        unlink (cover->priv->album_cache_path);
         _touch (cover->priv->album_cache_path);
     }
 #endif

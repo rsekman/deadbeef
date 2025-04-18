@@ -28,7 +28,7 @@ newoption {
 
 if _OPTIONS["standard"] ~= nil then
   plugins_to_disable = {"plugin-converter", "plugin-converter_gtk2",
-                        "plugin-converter_gtk3","plugin-ffmpeg","plugin-waveout",
+                        "plugin-converter_gtk3", "plugin-waveout",
                         "plugin-wildmidi", "plugin-soundtouch", "plugin-sid", "plugin-gme",
                         "plugin-mms", "plugin-cdda", "plugin-sc68", "plugin-vtx",
                         "plugin-notify"}
@@ -108,7 +108,7 @@ filter "platforms:Windows"
 
 -- clang preset in premake5 does not support icon compiling, define it here
 filter 'files:**.rc'
-  buildcommands {'windres -O coff -o "%{cfg.objdir}/%{file.basename}.o" "%{file.relpath}"'}
+  buildcommands {'windres --define VERSION=\"' .. get_version() .. '\" -O coff -o "%{cfg.objdir}/%{file.basename}.o" "%{file.relpath}"'}
   buildoutputs {'%{cfg.objdir}/%{file.basename}.o'}
 
 -- YASM compiling for ffap
@@ -742,7 +742,8 @@ project "ffmpeg"
     "plugins/ffmpeg/*.c",
   }
   pkgconfig ("libavformat")
-  -- links {"avcodec", "pthread", "avformat", "avcodec", "avutil", "z", "opencore-amrnb", "opencore-amrwb", "opus"}
+  pkgconfig ("libavcodec")
+  pkgconfig ("libavutil")
 end
 
 if option ("plugin-vorbis", "vorbisfile vorbis ogg") then
@@ -1075,6 +1076,30 @@ project "pltbrowser_gtk3"
   includedirs {
     "plugins/gtkui",
     "plugins/libparser"
+  }
+  pkgconfig ("gtk+-3.0")
+end
+
+if option ("plugin-lyrics_gtk2", "gtk+-2.0") then
+project "lyrics_gtk2"
+  files {
+    "plugins/lyrics/lyrics.c",
+    "plugins/lyrics/support.c"
+  }
+  includedirs {
+    "plugins/gtkui"
+  }
+  pkgconfig ("gtk+-2.0")
+end
+
+if option ("plugin-lyrics_gtk3", "gtk+-3.0") then
+project "lyrics_gtk3"
+  files {
+    "plugins/lyrics/lyrics.c",
+    "plugins/lyrics/support.c"
+  }
+  includedirs {
+    "plugins/gtkui"
   }
   pkgconfig ("gtk+-3.0")
 end

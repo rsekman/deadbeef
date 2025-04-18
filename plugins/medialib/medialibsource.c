@@ -61,7 +61,7 @@ _ml_load_playlist (medialib_source_t *source, const char *plpath) {
 
     gettimeofday (&tm1, NULL);
     if (!source->disable_file_operations) {
-        deadbeef->plt_load2 (-1, plt, NULL, plpath, NULL, NULL, NULL);
+        deadbeef->plt_load2 (-1, plt, NULL, plpath, &source->deleting_source, NULL, NULL);
     }
     gettimeofday (&tm2, NULL);
     long ms = (tm2.tv_sec * 1000 + tm2.tv_usec / 1000) - (tm1.tv_sec * 1000 + tm1.tv_usec / 1000);
@@ -85,7 +85,7 @@ _ml_load_playlist (medialib_source_t *source, const char *plpath) {
     conf.medialib_paths = _ml_source_get_music_paths (source, &conf.medialib_paths_count);
 
     dispatch_sync (source->sync_queue, ^{
-        ml_index (&scanner, &conf, 0);
+        ml_index (&scanner, &conf, 1);
     });
 
     ml_free_music_paths (conf.medialib_paths, conf.medialib_paths_count);
@@ -104,6 +104,7 @@ _ml_load_playlist (medialib_source_t *source, const char *plpath) {
 
     dispatch_sync (source->sync_queue, ^{
         source->ml_playlist = plt;
+        source->playlist_modification_idx++;
         memcpy (&source->db, &scanner.db, sizeof (ml_db_t));
     });
 
@@ -179,6 +180,7 @@ ml_free_source (ddb_mediasource_source_t *_source) {
     dispatch_sync (source->sync_queue, ^{
         ml_watch_fs_stop (source->fs_watcher);
         source->scanner_terminate = 1;
+        source->deleting_source = 1;
     });
 
     printf ("waiting for scanner queue to finish\n");
@@ -199,6 +201,10 @@ ml_free_source (ddb_mediasource_source_t *_source) {
 
     ml_item_state_free (&source->state);
 
+    if (source->last_build_tree_preset) {
+        scriptableItemFree(source->last_build_tree_preset);
+    }
+
     if (source->musicpaths_json) {
         json_decref (source->musicpaths_json);
         source->musicpaths_json = NULL;
@@ -214,6 +220,9 @@ ml_set_source_enabled (ddb_mediasource_source_t *_source, int enabled) {
             source->enabled = enabled;
             if (!enabled) {
                 source->scanner_terminate = 1;
+            } else {
+                source->scanner_terminate = 0;
+                source->initializing = 1;
             }
             char conf_name[200];
             snprintf (conf_name, sizeof (conf_name), "%senabled", source->source_conf_prefix);
@@ -231,6 +240,7 @@ ml_set_source_enabled (ddb_mediasource_source_t *_source, int enabled) {
                         deadbeef->get_system_dir (DDB_SYS_DIR_CONFIG));
                     _ml_load_playlist (source, plpath);
                     dispatch_sync (source->sync_queue, ^{
+                        source->initializing = 0;
                         ml_source_update_fs_watch (source);
                     });
                 });
@@ -266,7 +276,9 @@ ml_refresh (ddb_mediasource_source_t *_source) {
     __block int64_t scanner_current_index = -1;
     dispatch_sync (source->sync_queue, ^{
         // interrupt plt_insert_dir
-        source->scanner_terminate = 1;
+        if (!source->initializing || source->deleting_source) {
+            source->scanner_terminate = 1;
+        }
         // interrupt all queued scanners
         source->scanner_cancel_index = source->scanner_current_index;
         source->scanner_current_index += 1;
@@ -277,7 +289,7 @@ ml_refresh (ddb_mediasource_source_t *_source) {
         __block int enabled = 0;
         __block int cancel = 0;
         dispatch_sync (source->sync_queue, ^{
-            if (source->scanner_cancel_index >= scanner_current_index) {
+            if (source->scanner_cancel_index >= scanner_current_index || source->deleting_source) {
                 cancel = 1;
                 return;
             }
@@ -299,6 +311,7 @@ ml_refresh (ddb_mediasource_source_t *_source) {
                     source->ml_playlist = deadbeef->plt_alloc ("medialib");
                 }
                 deadbeef->plt_clear (source->ml_playlist);
+                source->playlist_modification_idx++;
                 ml_db_free (&source->db);
                 ml_free_music_paths (conf.medialib_paths, conf.medialib_paths_count);
                 return;

@@ -39,10 +39,16 @@ extern DB_functions_t *deadbeef;
     return self;
 }
 
-- (void)dealloc
-{
-    scriptableModelFree(_model);
-    if (_source) {
+- (void)dealloc {
+    [self cleanup];
+}
+
+- (void)cleanup {
+    if (_model != NULL) {
+        scriptableModelFree(_model);
+        _model = NULL;
+    }
+    if (_source != NULL) {
         _medialibPlugin->free_source(_source);
         _source = NULL;
     }

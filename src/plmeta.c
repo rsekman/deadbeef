@@ -25,6 +25,7 @@
   Oleksiy Yakovenko waker@users.sourceforge.net
 */
 
+#include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
 #include "plmeta.h"
@@ -35,8 +36,10 @@
 #define UNLOCK {pl_unlock();}
 
 DB_metaInfo_t *
-pl_meta_for_key_with_override (playItem_t *it, const char *key) {
-    pl_ensure_lock ();
+pl_meta_for_key_with_override_needs_mutex_lock (playItem_t *it, const char *key, int needs_mutex_lock) {
+    if (needs_mutex_lock) {
+        pl_ensure_lock ();
+    }
     DB_metaInfo_t *m = it->meta;
 
     // try to find an override
@@ -54,7 +57,38 @@ pl_meta_for_key_with_override (playItem_t *it, const char *key) {
         }
         m = m->next;
     }
-    return NULL;}
+    return NULL;
+}
+
+DB_metaInfo_t *
+pl_meta_for_key_with_override (playItem_t *it, const char *key) {
+    return pl_meta_for_key_with_override_needs_mutex_lock(it, key, 1);
+}
+
+DB_metaInfo_t *
+pl_meta_for_cached_key (playItem_t *it, const char *key, int needs_mutex_lock) {
+    if (needs_mutex_lock) {
+        pl_ensure_lock ();
+    }
+    DB_metaInfo_t *m = it->meta;
+
+    int starts_with_colon = key[0] == ':';
+
+    m = it->meta;
+    while (m) {
+        if (!starts_with_colon && *m->key == ':') {
+            break;
+        }
+        if (*m->key == '!') {
+            break;
+        }
+        if (key == m->key) {
+            return m;
+        }
+        m = m->next;
+    }
+    return NULL;
+}
 
 
 DB_metaInfo_t *
@@ -103,7 +137,19 @@ pl_add_empty_meta_for_key (playItem_t *it, const char *key) {
     }
     // add
     m = calloc (1, sizeof (DB_metaInfo_t));
-    m->key = metacache_add_string (key);
+
+    char *lc_key = strdup(key);
+
+    if (*key != ':') {
+        for (char *p = lc_key; *p; p++) {
+            *p = (char)tolower(*p);
+        }
+    }
+
+    m->key = metacache_add_string (lc_key);
+
+    free (lc_key);
+    lc_key = NULL;
 
     if (key[0] == ':' || key[0] == '_' || key[0] == '!') {
         if (tail) {

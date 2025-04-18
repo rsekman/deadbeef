@@ -40,6 +40,15 @@
 //   len:int32, data
 //  5: text dimming block
 //   dim_amount:int8, len:int32, data
+//  6: cached meta field
+//    single byte index
+//    0: album artist
+//    1: artist
+//    2: album
+//    3: title
+//    4: genre
+//    5: tracknumber
+//    6: disc
 // !0: plain text
 
 #ifdef HAVE_CONFIG_H
@@ -57,6 +66,7 @@
 #include <math.h>
 #include <assert.h>
 #include <sys/stat.h>
+#include "metacache.h"
 #include "streamer.h"
 #include "utf8.h"
 #include "playlist.h"
@@ -72,6 +82,31 @@
 
 //#define trace(...) { fprintf(stderr, __VA_ARGS__); }
 #define trace(fmt,...)
+
+static const int num_aa_fields = 6;
+static const int num_a_fields = 6;
+static const int num_alb_fields = 2;
+static const int num_title_fields = 2;
+static const int num_genre_fields = 1;
+static const int num_trknr_fields = 1;
+static const int num_disc_fields = 1;
+
+static const char *aa_fields[num_aa_fields] = { "album artist", "albumartist", "band", "artist", "composer", "performer" };
+static const char *a_fields[num_a_fields] = { "artist", "album artist", "albumartist", "band", "composer", "performer" };
+static const char *alb_fields[num_alb_fields] = { "album", "venue" };
+static const char *title_fields[num_alb_fields] = { "title", ":URI" };
+static const char *genre_fields[num_genre_fields] = { "genre" };
+static const char *trknr_fields[num_trknr_fields] = { "tracknumber" };
+static const char *disc_fields[num_disc_fields] = { "disc" };
+
+// Lowercase + uppercase version of each
+static const char *aa_fields_cached[num_aa_fields] = { NULL, };
+static const char *a_fields_cached[num_a_fields] = { NULL, };
+static const char *alb_fields_cached[num_alb_fields] = { NULL, };
+static const char *title_fields_cached[num_title_fields] = { NULL, };
+static const char *genre_fields_cached[num_genre_fields] = { NULL, };
+static const char *trknr_fields_cached[num_trknr_fields] = { NULL, };
+static const char *disc_fields_cached[num_disc_fields] = { NULL, };
 
 #define TEMP_BUFFER_SIZE 1000
 #define TF_INTERNAL_FLAG_LOCKED (1<<16)
@@ -133,10 +168,74 @@ static int
 tf_eval_int (ddb_tf_context_t *ctx, const char *code, int size, char *out, int outlen, int *bool_out, int fail_on_undef);
 
 static const char *
-_tf_get_combined_value (playItem_t *it, const char *key, int *needs_free, int item_index);
+_tf_get_combined_value (playItem_t *it, const char *key, int *needs_free, int item_index, int needs_mutex_lock);
 
 static void
 _tf_vars_free(ddb_tf_context_int_t *ctx);
+
+const char *
+_metacache_add_uppercase_string(const char *input) {
+    char *buffer = malloc (strlen (input + 1));
+
+    char *p = buffer;
+    while (*input) {
+        *p++ = (char)toupper(*input++);
+    }
+    *p = 0;
+
+    const char *result = metacache_add_string (buffer);
+    free (buffer);
+    return result;
+}
+
+void
+tf_init (void) {
+    for (int i = 0; i < num_aa_fields; i++) {
+        aa_fields_cached[i] = metacache_add_string (aa_fields[i]);
+    }
+    for (int i = 0; i < num_a_fields; i++) {
+        a_fields_cached[i] = metacache_add_string (a_fields[i]);
+    }
+    for (int i = 0; i < num_alb_fields; i++) {
+        alb_fields_cached[i] = metacache_add_string (alb_fields[i]);
+    }
+    for (int i = 0; i < num_title_fields; i++) {
+        title_fields_cached[i] = metacache_add_string (title_fields[i]);
+    }
+    for (int i = 0; i < num_genre_fields; i++) {
+        genre_fields_cached[i] = metacache_add_string (genre_fields[i]);
+    }
+    // Special case: "tracknumber" -> "track" mapping
+    trknr_fields_cached[0] = metacache_add_string ("track");
+    for (int i = 0; i < num_disc_fields; i++) {
+        disc_fields_cached[i] = metacache_add_string (disc_fields[i]);
+    }
+}
+
+void
+tf_deinit (void) {
+    for (int i = 0; i < num_aa_fields; i++) {
+        metacache_remove_string (aa_fields_cached[i]);
+    }
+    for (int i = 0; i < num_a_fields; i++) {
+        metacache_remove_string (a_fields_cached[i]);
+    }
+    for (int i = 0; i < num_alb_fields; i++) {
+        metacache_remove_string (alb_fields_cached[i]);
+    }
+    for (int i = 0; i < num_title_fields; i++) {
+        metacache_remove_string (title_fields_cached[i]);
+    }
+    for (int i = 0; i < num_genre_fields; i++) {
+        metacache_remove_string (genre_fields_cached[i]);
+    }
+    for (int i = 0; i < num_trknr_fields; i++) {
+        metacache_remove_string (trknr_fields_cached[i]);
+    }
+    for (int i = 0; i < num_disc_fields; i++) {
+        metacache_remove_string (disc_fields_cached[i]);
+    }
+}
 
 #define TF_EVAL_CHECK(res, ctx, arg, arg_len, out, outlen, fail_on_undef)\
 res = tf_eval_int (ctx, arg, arg_len, out, outlen, &bool_out, fail_on_undef);\
@@ -2268,7 +2367,8 @@ tf_func_meta (ddb_tf_context_t *ctx, int argc, const uint16_t *arglens, const ch
     TF_EVAL_CHECK(len, ctx, arg, arglens[0], out, outlen, fail_on_undef);
 
     int needs_free = 0;
-    const char *meta = _tf_get_combined_value ((playItem_t *)ctx->it, out, &needs_free, tf_item_index_for_context(ctx));
+    int needs_mutex_lock = (ctx->flags & DDB_TF_CONTEXT_NO_MUTEX_LOCK) ? 0 : 1;
+    const char *meta = _tf_get_combined_value ((playItem_t *)ctx->it, out, &needs_free, tf_item_index_for_context(ctx), needs_mutex_lock);
     if (!meta) {
         return 0;
     }
@@ -2775,8 +2875,14 @@ tf_func_def tf_funcs[TF_MAX_FUNCS] = {
 };
 
 static const char *
-_tf_get_combined_value (playItem_t *it, const char *key, int *needs_free, int item_index) {
-    DB_metaInfo_t *meta = pl_meta_for_key_with_override (it, key);
+_tf_get_combined_value_cached_key (playItem_t *it, const char *key, int *needs_free, int item_index, int is_cached_key, int needs_mutex_lock) {
+    DB_metaInfo_t *meta;
+    if (!is_cached_key) {
+        meta = pl_meta_for_key_with_override_needs_mutex_lock (it, key, needs_mutex_lock);
+    }
+    else {
+        meta = pl_meta_for_cached_key(it, key, needs_mutex_lock);
+    }
 
     if (!meta) {
         *needs_free = 0;
@@ -2832,6 +2938,11 @@ _tf_get_combined_value (playItem_t *it, const char *key, int *needs_free, int it
     return out;
 }
 
+static const char *
+_tf_get_combined_value (playItem_t *it, const char *key, int *needs_free, int item_index, int needs_mutex_lock) {
+    return _tf_get_combined_value_cached_key(it, key, needs_free, item_index, 0, needs_mutex_lock);
+}
+
 static int
 format_playback_time (char *out, int outlen, float t) {
     int daystotal = (int)t / (3600*24);
@@ -2851,6 +2962,45 @@ format_playback_time (char *out, int outlen, float t) {
     }
 
     return len;
+}
+
+static const char *
+_get_title_from_path(const char *path, const char **end) {
+    const char *start = strrchr (path, '/');
+    if (start) {
+        start++;
+    }
+    else {
+        start = path;
+    }
+    const char *startcol = strrchr (path, ':');
+    if (startcol > start) {
+        start = startcol+1;
+    }
+    const char *pend = strrchr (start, '.');
+    if (pend == NULL) {
+        pend = start + strlen(start);
+    }
+    *end = pend;
+
+    return start;
+}
+
+static int
+_get_tracknumber_from_string(const char *v, char *out, int outlen) {
+    const char *p = v;
+    while (*p) {
+        if (!isdigit (*p)) {
+            break;
+        }
+        p++;
+    }
+    if (p > v && *p == 0 && p-v == 1) {
+        return snprintf_clip (out, outlen, "%02d", atoi(v));
+    }
+    else {
+        return -1;
+    }
 }
 
 /*
@@ -2940,7 +3090,8 @@ tf_eval_int (ddb_tf_context_t *ctx, const char *code, int size, char *out, int o
 
                 int pl_locked = 0;
 
-                if (!(ctx->flags&DDB_TF_CONTEXT_NO_MUTEX_LOCK)
+                int needs_mutex_lock = (ctx->flags & DDB_TF_CONTEXT_NO_MUTEX_LOCK) ? 0 : 1;
+                if (!needs_mutex_lock
                     && !(ctx->flags&TF_INTERNAL_FLAG_LOCKED)) {
                     pl_lock ();
                     ctx->flags |= TF_INTERNAL_FLAG_LOCKED;
@@ -2948,9 +3099,6 @@ tf_eval_int (ddb_tf_context_t *ctx, const char *code, int size, char *out, int o
                 }
                 const char *val = NULL;
                 int needs_free = 0;
-                const char *aa_fields[] = { "album artist", "albumartist", "band", "artist", "composer", "performer", NULL };
-                const char *a_fields[] = { "artist", "album artist", "albumartist", "band", "composer", "performer", NULL };
-                const char *alb_fields[] = { "album", "venue", NULL };
 
                 // set to 1 if special case handler successfully wrote the output
                 int skip_out = 0;
@@ -2959,29 +3107,29 @@ tf_eval_int (ddb_tf_context_t *ctx, const char *code, int size, char *out, int o
                 int tmp_a = 0, tmp_b = 0, tmp_c = 0, tmp_d = 0, tmp_e = 0;
                 int item_index = tf_item_index_for_context(ctx);
                 if (!strcmp (name, aa_fields[0])) {
-                    for (int i = 0; !val && aa_fields[i]; i++) {
-                        val = _tf_get_combined_value(it, aa_fields[i], &needs_free, item_index);
+                    for (int i = 0; !val && i < num_aa_fields; i++) {
+                        val = _tf_get_combined_value(it, aa_fields[i], &needs_free, item_index, needs_mutex_lock);
                     }
                 }
                 else if (!strcmp (name, a_fields[0])) {
-                    for (int i = 0; !val && a_fields[i]; i++) {
-                        val = _tf_get_combined_value(it, a_fields[i], &needs_free, item_index);
+                    for (int i = 0; !val && i < num_a_fields; i++) {
+                        val = _tf_get_combined_value(it, a_fields[i], &needs_free, item_index, needs_mutex_lock);
                     }
                 }
-                else if (!strcmp (name, "album")) {
-                    for (int i = 0; !val && alb_fields[i]; i++) {
-                        val = _tf_get_combined_value (it, alb_fields[i], &needs_free, item_index);
+                else if (!strcmp (name, alb_fields[0])) {
+                    for (int i = 0; !val && i < num_alb_fields; i++) {
+                        val = _tf_get_combined_value (it, alb_fields[i], &needs_free, item_index, needs_mutex_lock);
                     }
                 }
                 else if (!strcmp (name, "track artist")) {
                     const char *aa = NULL;
-                    for (int i = 0; !val && aa_fields[i]; i++) {
-                        val = _tf_get_combined_value (it, aa_fields[i], &needs_free, item_index);
+                    for (int i = 0; !val && i < num_aa_fields; i++) {
+                        val = _tf_get_combined_value (it, aa_fields[i], &needs_free, item_index, needs_mutex_lock);
                     }
                     aa = val;
                     val = NULL;
-                    for (int i = 0; !val && a_fields[i]; i++) {
-                        val = _tf_get_combined_value (it, a_fields[i], &needs_free, item_index);
+                    for (int i = 0; !val && i < num_a_fields; i++) {
+                        val = _tf_get_combined_value (it, a_fields[i], &needs_free, item_index, needs_mutex_lock);
                     }
                     if (val && aa && !strcmp (val, aa)) {
                         val = NULL;
@@ -2990,15 +3138,8 @@ tf_eval_int (ddb_tf_context_t *ctx, const char *code, int size, char *out, int o
                 else if (!strcmp (name, "tracknumber")) {
                     const char *v = pl_find_meta_raw (it, "track");
                     if (v) {
-                        const char *p = v;
-                        while (*p) {
-                            if (!isdigit (*p)) {
-                                break;
-                            }
-                            p++;
-                        }
-                        if (p > v && *p == 0 && p-v == 1) {
-                            int l = snprintf_clip (out, outlen, "%02d", atoi(v));
+                        int l = _get_tracknumber_from_string(v, out, outlen);
+                        if (l >= 0) {
                             out += l;
                             outlen -= l;
                             skip_out = 1;
@@ -3008,24 +3149,15 @@ tf_eval_int (ddb_tf_context_t *ctx, const char *code, int size, char *out, int o
                         }
                     }
                 }
-                else if (!strcmp (name, "title")) {
-                    val = _tf_get_combined_value (it, "title", &needs_free, item_index);
+                else if (!strcmp (name, title_fields[0])) {
+                    val = _tf_get_combined_value (it, "title", &needs_free, item_index, needs_mutex_lock);
                     if (!val) {
                         const char *v = pl_find_meta_raw (it, ":URI");
                         if (v) {
-                            const char *start = strrchr (v, '/');
-                            if (start) {
-                                start++;
-                            }
-                            else {
-                                start = v;
-                            }
-                            const char *startcol = strrchr (v, ':');
-                            if (startcol > start) {
-                                start = startcol+1;
-                            }
-                            const char *end = strrchr (start, '.');
-                            if (end) {
+                            const char *end = NULL;
+                            const char *start = _get_title_from_path(v, &end);
+
+                            if (start && end) {
                                 int n = (int)(end-start);
                                 n = min (n, outlen);
                                 n = u8_strnbcpy (out, start, n);
@@ -3514,7 +3646,7 @@ tf_eval_int (ddb_tf_context_t *ctx, const char *code, int size, char *out, int o
                     skip_out = 1;
                 }
                 else {
-                    val = _tf_get_combined_value (it, name, &needs_free, item_index);
+                    val = _tf_get_combined_value (it, name, &needs_free, item_index, needs_mutex_lock);
                 }
 
                 if (val || (!val && out > init_out)) {
@@ -3638,6 +3770,123 @@ tf_eval_int (ddb_tf_context_t *ctx, const char *code, int size, char *out, int o
                     outlen -= undimlen;
                 }
             }
+            else if (*code == 6) { // optimized field
+                code++;
+                size--;
+
+                int8_t field_id = *code++;
+                size--;
+
+                int pl_locked = 0;
+
+                if (!(ctx->flags&DDB_TF_CONTEXT_NO_MUTEX_LOCK)
+                    && !(ctx->flags&TF_INTERNAL_FLAG_LOCKED)) {
+                    pl_lock ();
+                    ctx->flags |= TF_INTERNAL_FLAG_LOCKED;
+                    pl_locked = 1;
+                }
+                const char *val = NULL;
+                int needs_free = 0;
+                int item_index = tf_item_index_for_context(ctx);
+
+                // set to 1 if special case handler successfully wrote the output
+                int skip_out = 0;
+
+                int needs_mutex_lock = (ctx->flags & DDB_TF_CONTEXT_NO_MUTEX_LOCK) ? 0 : 1;
+
+                switch (field_id) {
+                case 0: // album artist
+                    for (int i = 0; !val && i < num_aa_fields; i++) {
+                        val = _tf_get_combined_value_cached_key(it, aa_fields_cached[i], &needs_free, item_index, 1, needs_mutex_lock);
+                    }
+                    break;
+                case 1: // artist
+                    for (int i = 0; !val && i < num_a_fields; i++) {
+                        val = _tf_get_combined_value_cached_key(it, a_fields_cached[i], &needs_free, item_index, 1, needs_mutex_lock);
+                    }
+                    break;
+                case 2: // album
+                    for (int i = 0; !val && i < num_alb_fields; i++) {
+                        val = _tf_get_combined_value_cached_key(it, alb_fields_cached[i], &needs_free, item_index, 1, needs_mutex_lock);
+                    }
+                    break;
+                case 3: // title
+                    for (int i = 0; !val && i < num_title_fields; i++) {
+                        val = _tf_get_combined_value_cached_key(it, title_fields_cached[i], &needs_free, item_index, 1, needs_mutex_lock);
+                        if (val != NULL && i > 0) {
+                            const char *end = NULL;
+                            const char *start = _get_title_from_path(val, &end);
+
+                            if (start && end) {
+                                int n = (int)(end-start);
+                                n = min (n, outlen);
+                                n = u8_strnbcpy (out, start, n);
+                                outlen -= n;
+                                out += n;
+                            }
+                            val = NULL;
+                            break;
+                        }
+                    }
+                    break;
+                case 4: // genre
+                    for (int i = 0; !val && i < num_genre_fields; i++) {
+                        val = _tf_get_combined_value_cached_key(it, genre_fields_cached[i], &needs_free, item_index, 1, needs_mutex_lock);
+                    }
+                    break;
+                case 5: // tracknumber
+                    for (int i = 0; !val && i < num_trknr_fields; i++) {
+                        DB_metaInfo_t *meta = pl_meta_for_key_with_override_needs_mutex_lock (it, "track", needs_mutex_lock);
+                        const char *v = NULL;
+                        if (meta) {
+                            v = meta->value;
+                        }
+                        if (v) {
+                            int l = _get_tracknumber_from_string(v, out, outlen);
+                            if (l >= 0) {
+                                out += l;
+                                outlen -= l;
+                                skip_out = 1;
+                                break;
+                            }
+                            else {
+                                val = v;
+                            }
+                        }
+                    }
+                    break;
+                case 6: // disc
+                    for (int i = 0; !val && i < num_disc_fields; i++) {
+                        val = _tf_get_combined_value_cached_key(it, disc_fields_cached[i], &needs_free, item_index, 1, needs_mutex_lock);
+                    }
+                    break;
+                default:
+                    break;
+                }
+
+                if (val || (!val && out > init_out)) {
+                    *bool_out = 1;
+                }
+
+                // default case
+                if (!skip_out && val) {
+                    int32_t l = u8_strnbcpy (out, val, outlen);
+
+                    if (ctx->metadata_transformer != NULL && outlen > 0) {
+                        ctx->metadata_transformer(ctx, out, l);
+                    }
+
+                    out += l;
+                    outlen -= l;
+                }
+                if (pl_locked) {
+                    pl_unlock ();
+                    ctx->flags &= ~TF_INTERNAL_FLAG_LOCKED;
+                }
+                if (!skip_out && !val && fail_on_undef) {
+                    return -1;
+                }
+            }
             else {
                 return -1;
             }
@@ -3745,33 +3994,82 @@ int
 tf_compile_field (tf_compiler_t *c) {
     c->i++;
     *(c->o++) = 0;
-    *(c->o++) = 2;
 
-    const char *fstart = c->i;
+    uint8_t *type_ptr = c->o++;
+
     uint8_t *plen = c->o;
     c->o += 1;
+    int index = 0;
+    int should_lowercase = 0;
+    const char *fstart = c->o;
     while (*(c->i)) {
         if (*(c->i) == '%') {
             break;
         }
         else {
-            *(c->o++) = *(c->i++);
+            if (index == 0) {
+                if (*(c->i) != ':') {
+                    should_lowercase = 1;
+                }
+                index++;
+            }
+            char chr = *(c->i++);
+            if (should_lowercase) {
+                chr = (char)tolower(chr);
+            }
+            *(c->o++) = chr;
         }
     }
     if (*(c->i) != '%') {
         return -1;
     }
     c->i++;
+    
 
     int32_t len = (int32_t)(c->o - plen - 1);
     if (len > 0xff) {
         return -1;
     }
-    *plen = (char)len;
 
-    char field[len+1];
-    memcpy (field, fstart, len);
+
+    char *field = alloca(len+1);
+    memcpy(field, fstart, len);
     field[len] = 0;
+
+    // detect special fields, and upgrade to optimized field block
+    if (!strcmp(field, aa_fields[0])) {
+        c->o = type_ptr;
+        *(c->o++) = 6;
+        *(c->o++) = 0;
+    } else if (!strcmp(field, a_fields[0])) {
+        c->o = type_ptr;
+        *(c->o++) = 6;
+        *(c->o++) = 1;
+    } else if (!strcmp(field, alb_fields[0])) {
+        c->o = type_ptr;
+        *(c->o++) = 6;
+        *(c->o++) = 2;
+    } else if (!strcmp(field, title_fields[0])) {
+        c->o = type_ptr;
+        *(c->o++) = 6;
+        *(c->o++) = 3;
+    } else if (!strcmp(field, genre_fields[0])) {
+        c->o = type_ptr;
+        *(c->o++) = 6;
+        *(c->o++) = 4;
+    } else if (!strcmp(field, trknr_fields[0])) {
+        c->o = type_ptr;
+        *(c->o++) = 6;
+        *(c->o++) = 5;
+    } else if (!strcmp(field, disc_fields[0])) {
+        c->o = type_ptr;
+        *(c->o++) = 6;
+        *(c->o++) = 6;
+    } else {
+        *type_ptr = 2;
+        *plen = (char)len;
+    }
+
     return 0;
 }
 
