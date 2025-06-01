@@ -672,13 +672,15 @@ plt_get_idx_of (playlist_t *plt) {
 int
 plt_get_title (playlist_t *p, char *buffer, int bufsize) {
     LOCK;
-    int l = (int)strlen (p->title);
-    if (buffer) {
-        strncpy (buffer, p->title, bufsize);
-        buffer[bufsize - 1] = 0;
+    if (!buffer) {
+        int l = (int)strlen (p->title);
+        UNLOCK;
+        return l;
     }
+    strncpy (buffer, p->title, bufsize);
+    buffer[bufsize - 1] = 0;
     UNLOCK;
-    return l;
+    return 0;
 }
 
 int
