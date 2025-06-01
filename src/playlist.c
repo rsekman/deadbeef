@@ -2474,7 +2474,6 @@ _plt_load_from_file (playlist_t *plt, const char *fname, ddb_file_handle_t *fp, 
         }
         uint16_t l;
         int16_t tracknum = 0;
-        char true_uri[PATH_MAX];
         if (minorver <= 2) {
             // fname
             if (ddb_file_read (&l, 1, 2, fp) != 2) {
