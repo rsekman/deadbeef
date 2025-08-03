@@ -1333,17 +1333,22 @@ _get_fullname_and_dir (
     int dirsz,
     DB_vfs_t *vfs,
     const char *dirname,
-    const char *d_name) {
-    char resolved_dirname[PATH_MAX];
-
-    char *res = realpath (dirname, resolved_dirname);
-    if (res) {
-        dirname = resolved_dirname;
+    const char *d_name
+) {
+    char *resolved_dirname = calloc(PATH_MAX, 1);
+    if (resolved_dirname != NULL) {
+        char *res = realpath (dirname, resolved_dirname);
+        if (res != NULL) {
+            dirname = resolved_dirname;
+        }
+    }
+    else {
+        trace ("WARNING: _get_fullname_and_dir: calloc(%d) returned NULL\n", (int)PATH_MAX);
     }
 
-    if (!vfs) {
+    if (vfs == NULL) {
         // prevent double-slashes
-        char *stripped_dirname = strdupa (dirname);
+        char *stripped_dirname = strdup (dirname);
         char *p = stripped_dirname + strlen (stripped_dirname) - 1;
         while (p > stripped_dirname && (*p == '/' || *p == '\\')) {
             p--;
@@ -1356,6 +1361,8 @@ _get_fullname_and_dir (
             *dir = 0;
             strncat (dir, stripped_dirname, dirsz - 1);
         }
+
+        free (stripped_dirname);
     }
     else {
         const char *sch = NULL;
@@ -1377,6 +1384,9 @@ _get_fullname_and_dir (
             }
         }
     }
+
+    free (resolved_dirname);
+    resolved_dirname = NULL;
 
 #ifdef __MINGW32__
     if (fullname && strchr (fullname, '\\')) {

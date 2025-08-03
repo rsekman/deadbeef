@@ -2097,7 +2097,6 @@
 		2DB522FC2AACF14500B6250A /* gtkScriptableSelectViewController.c in Sources */ = {isa = PBXBuildFile; fileRef = 2DB522F82AACF09600B6250A /* gtkScriptableSelectViewController.c */; };
 		2DB52F7C24CF7CF20046D516 /* TrackContextMenu.h in Headers */ = {isa = PBXBuildFile; fileRef = 2DB52F7A24CF7CF20046D516 /* TrackContextMenu.h */; };
 		2DB52F7D24CF7CF20046D516 /* TrackContextMenu.m in Sources */ = {isa = PBXBuildFile; fileRef = 2DB52F7B24CF7CF20046D516 /* TrackContextMenu.m */; };
-		2DB86E4F295CFFBA0011014C /* config.h in Headers */ = {isa = PBXBuildFile; fileRef = 2DB86E3F295CFFB90011014C /* config.h */; };
 		2DB86E51295D01880011014C /* compat_str.c in Sources */ = {isa = PBXBuildFile; fileRef = 2DB86E50295D01880011014C /* compat_str.c */; };
 		2DB951B626B07E7B00602876 /* decodedblock.h in Headers */ = {isa = PBXBuildFile; fileRef = 2DB951B426B07E7B00602876 /* decodedblock.h */; };
 		2DB951C726B0874200602876 /* decodedblock.c in Sources */ = {isa = PBXBuildFile; fileRef = 2DB951B526B07E7B00602876 /* decodedblock.c */; };
@@ -6834,7 +6833,6 @@
 		2DB522F82AACF09600B6250A /* gtkScriptableSelectViewController.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = gtkScriptableSelectViewController.c; sourceTree = "<group>"; };
 		2DB52F7A24CF7CF20046D516 /* TrackContextMenu.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TrackContextMenu.h; sourceTree = "<group>"; };
 		2DB52F7B24CF7CF20046D516 /* TrackContextMenu.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TrackContextMenu.m; sourceTree = "<group>"; };
-		2DB86E3F295CFFB90011014C /* config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = config.h; path = "deps/mpg123-1.32.6/ports/Xcode/config.h"; sourceTree = SOURCE_ROOT; };
 		2DB86E50295D01880011014C /* compat_str.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = compat_str.c; path = "deps/mpg123-1.32.6/src/compat/compat_str.c"; sourceTree = SOURCE_ROOT; };
 		2DB951B426B07E7B00602876 /* decodedblock.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = decodedblock.h; sourceTree = "<group>"; };
 		2DB951B526B07E7B00602876 /* decodedblock.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = decodedblock.c; sourceTree = "<group>"; };
@@ -9612,6 +9610,7 @@
 		2D22F5AB19E13621009C631E /* sid */ = {
 			isa = PBXGroup;
 			children = (
+				2D34335B2DFE0D7A00DFEFA3 /* libsidplay2_config */,
 				2D00FB0D2435381E000FC130 /* sidplay-libs */,
 				2D22F6F719E137A6009C631E /* csid.h */,
 				2D22F6F819E137A6009C631E /* plugin.c */,
@@ -9819,6 +9818,13 @@
 			);
 			path = DesignMode;
 			sourceTree = "<group>";
+		};
+		2D34335B2DFE0D7A00DFEFA3 /* libsidplay2_config */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = libsidplay2_config;
+			sourceTree = SOURCE_ROOT;
 		};
 		2D35A24E2B74DD28006D9356 /* filereader */ = {
 			isa = PBXGroup;
@@ -10987,7 +10993,6 @@
 			isa = PBXGroup;
 			children = (
 				2D565A831A40BCE200CE1F5D /* abi_align.h */,
-				2DB86E3F295CFFB90011014C /* config.h */,
 				2DB0C958295CFCE2007672B8 /* compat.c */,
 				2DB0C957295CFCE1007672B8 /* compat.h */,
 				2DB86E50295D01880011014C /* compat_str.c */,
@@ -14270,7 +14275,6 @@
 				2D92B7842C483452002BAF88 /* lfs_wrap.h in Headers */,
 				2D565B381A40BCE200CE1F5D /* huffman.h in Headers */,
 				2D565B8D1A40BCE200CE1F5D /* synths.h in Headers */,
-				2DB86E4F295CFFBA0011014C /* config.h in Headers */,
 				2D565B3C1A40BCE200CE1F5D /* icy2utf8.h in Headers */,
 				2D565B5B1A40BCE200CE1F5D /* synth_8bit.h in Headers */,
 				2D565B311A40BCE200CE1F5D /* frame.h in Headers */,
@@ -16505,7 +16509,8 @@
 		4D1B3E7218379829003E6066 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 1400;
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 2600;
 				ORGANIZATIONNAME = "Oleksiy Yakovenko";
 				TargetAttributes = {
 					2D00F23E2434DE4E000FC130 = {
@@ -20400,6 +20405,7 @@
 				CLANG_ANALYZER_DEADCODE_DEADSTORES = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_WARN_COMMA = NO;
+				CLANG_WARN_STRICT_PROTOTYPES = NO;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -20430,6 +20436,7 @@
 				CLANG_ANALYZER_DEADCODE_DEADSTORES = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_WARN_COMMA = NO;
+				CLANG_WARN_STRICT_PROTOTYPES = NO;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				COPY_PHASE_STRIP = NO;
 				DEAD_CODE_STRIPPING = YES;
@@ -21220,6 +21227,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = NO;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				DEAD_CODE_STRIPPING = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
@@ -21246,6 +21254,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = NO;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				COPY_PHASE_STRIP = NO;
 				DEAD_CODE_STRIPPING = YES;
@@ -21331,8 +21340,6 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				EXECUTABLE_PREFIX = lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
-					"VERSION=\\\"deadbeef\\\"",
-					"PACKAGE=\\\"libsidplay2\\\"",
 					"HAVE_STRCASECMP=1",
 					"HAVE_STRNCASECMP=1",
 					"HAVE_UNIX=1",
@@ -21344,12 +21351,11 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_VARIABLE = NO;
 				HEADER_SEARCH_PATHS = (
-					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"\"$(SRCROOT)/libsidplay2_config\"",
 					"$(SRCROOT)",
 					"\"$(SRCROOT)/../plugins/sid/sidplay-libs/libsidplay/include\"",
 					"\"$(SRCROOT)/../plugins/sid/sidplay-libs/builders/resid-builder/include/sidplay/builders\"",
 					"\"$(SRCROOT)/../plugins/sid/sidplay-libs\"",
-					"\"$(SRCROOT)/../plugins/sid/sidplay-libs/unix\"",
 				);
 				MTL_ENABLE_DEBUG_INFO = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -21369,8 +21375,6 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				EXECUTABLE_PREFIX = lib;
 				GCC_PREPROCESSOR_DEFINITIONS = (
-					"VERSION=\\\"deadbeef\\\"",
-					"PACKAGE=\\\"libsidplay2\\\"",
 					"HAVE_STRCASECMP=1",
 					"HAVE_STRNCASECMP=1",
 					"HAVE_UNIX=1",
@@ -21382,12 +21386,11 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_VARIABLE = NO;
 				HEADER_SEARCH_PATHS = (
-					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"\"$(SRCROOT)/libsidplay2_config\"",
 					"$(SRCROOT)",
 					"\"$(SRCROOT)/../plugins/sid/sidplay-libs/libsidplay/include\"",
 					"\"$(SRCROOT)/../plugins/sid/sidplay-libs/builders/resid-builder/include/sidplay/builders\"",
 					"\"$(SRCROOT)/../plugins/sid/sidplay-libs\"",
-					"\"$(SRCROOT)/../plugins/sid/sidplay-libs/unix\"",
 				);
 				MTL_ENABLE_DEBUG_INFO = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -21412,8 +21415,6 @@
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"\"$(SRCROOT)/../plugins/sid/sidplay-libs/libsidplay/include\"",
 					"\"$(SRCROOT)/../plugins/sid/sidplay-libs/builders/resid-builder/include\"",
 					"\"$(SRCROOT)/../plugins/sid/sidplay-libs/builders/resid-builder/include/sidplay/builders\"",
@@ -21442,8 +21443,6 @@
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"\"$(SRCROOT)/../plugins/sid/sidplay-libs/libsidplay/include\"",
 					"\"$(SRCROOT)/../plugins/sid/sidplay-libs/builders/resid-builder/include\"",
 					"\"$(SRCROOT)/../plugins/sid/sidplay-libs/builders/resid-builder/include/sidplay/builders\"",
@@ -22232,6 +22231,7 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++98";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_WARN_COMMA = NO;
+				CLANG_WARN_STRICT_PROTOTYPES = NO;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				DEAD_CODE_STRIPPING = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
@@ -22266,6 +22266,7 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++98";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_WARN_COMMA = NO;
+				CLANG_WARN_STRICT_PROTOTYPES = NO;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				COPY_PHASE_STRIP = NO;
 				DEAD_CODE_STRIPPING = YES;
@@ -22618,11 +22619,8 @@
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
 				GCC_WARN_UNINITIALIZED_AUTOS = NO;
-				HEADER_SEARCH_PATHS = (
-					"$(SRCROOT)/deps/mpg123-1.31.1/ports/Xcode",
-					"$(SRCROOT)/deps/mpg123-1.31.1/src/libmpg123",
-					"$(SRCROOT)/deps/mpg123-1.31.1/ports/Xcode",
-				);
+				GCC_WARN_UNUSED_FUNCTION = NO;
+				HEADER_SEARCH_PATHS = "\"$(SRCROOT)/deps/mpg123-1.32.6/ports/Xcode\"";
 				LD_DYLIB_INSTALL_NAME = "";
 				MTL_ENABLE_DEBUG_INFO = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -22665,11 +22663,8 @@
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
 				GCC_WARN_UNINITIALIZED_AUTOS = NO;
-				HEADER_SEARCH_PATHS = (
-					"$(SRCROOT)/deps/mpg123-1.31.1/ports/Xcode",
-					"$(SRCROOT)/deps/mpg123-1.31.1/src/libmpg123",
-					"$(SRCROOT)/deps/mpg123-1.31.1/ports/Xcode",
-				);
+				GCC_WARN_UNUSED_FUNCTION = NO;
+				HEADER_SEARCH_PATHS = "\"$(SRCROOT)/deps/mpg123-1.32.6/ports/Xcode\"";
 				LD_DYLIB_INSTALL_NAME = "";
 				MTL_ENABLE_DEBUG_INFO = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -24387,6 +24382,7 @@
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_WARN_COMMA = NO;
+				CLANG_WARN_STRICT_PROTOTYPES = NO;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				DEAD_CODE_STRIPPING = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
@@ -24416,6 +24412,7 @@
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_WARN_COMMA = NO;
+				CLANG_WARN_STRICT_PROTOTYPES = NO;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				COPY_PHASE_STRIP = NO;
 				DEAD_CODE_STRIPPING = YES;
@@ -24706,7 +24703,6 @@
 				MACH_O_TYPE = mh_dylib;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				RUN_CLANG_STATIC_ANALYZER = NO;
-				STRIP_INSTALLED_PRODUCT = YES;
 				WARNING_CFLAGS = "-Wno-unreachable-code-loop-increment";
 			};
 			name = Debug;
@@ -24740,7 +24736,6 @@
 				MACH_O_TYPE = mh_dylib;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				RUN_CLANG_STATIC_ANALYZER = NO;
-				STRIP_INSTALLED_PRODUCT = YES;
 				WARNING_CFLAGS = "-Wno-unreachable-code-loop-increment";
 			};
 			name = Release;

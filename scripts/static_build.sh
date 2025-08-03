@@ -1,4 +1,14 @@
 #!/bin/bash
+
+DEBUG=false
+
+for arg in "$@"; do
+    if [[ "$arg" == "--debug" ]]; then
+        DEBUG=true
+        break
+    fi
+done
+
 VERSION=`cat PORTABLE_VERSION | perl -ne 'chomp and print'`
 ORIGIN=$PWD
 STATIC_DEPS=static-deps
@@ -6,7 +16,6 @@ AP=$ORIGIN/external/apbuild
 #ARCH=`uname -m | perl -ne 'chomp and print'`
 if [[ "$ARCH" == "i686" ]]; then
     export CFLAGS="-m32 -I$ORIGIN/$STATIC_DEPS/lib-x86-32/include"
-    export CXXFLAGS=$CFLAGS
     export LDFLAGS="-m32 -L$ORIGIN/$STATIC_DEPS/lib-x86-32/lib -L$ORIGIN/$STATIC_DEPS/lib-x86-32/lib/i386-linux-gnu"
     export CONFIGURE_FLAGS="--build=i686-unknown-linux-gnu"
     export LIBRARY_PATH="$ORIGIN/$STATIC_DEPS/lib-x86-32/lib"
@@ -65,7 +74,18 @@ export OBJC=$AP/apgcc
 
 ./autogen.sh || exit 1
 
-./configure CFLAGS="$CFLAGS -O3 -D_FORTIFY_SOURCE=0" CXXFLAGS="$CXXFLAGS -O3 -D_FORTIFY_SOURCE=0" LDFLAGS="$LDFLAGS" $CONFIGURE_FLAGS --enable-staticlink --prefix=/opt/deadbeef || {
+CFLAGS="$CFLAGS -D_FORTIFY_SOURCE=0"
+
+if $DEBUG; then
+    CFLAGS="$CFLAGS -O0 -g"
+else
+    CFLAGS="$CFLAGS -O3"
+fi
+
+CXXFLAGS=$CFLAGS
+LDFLAGS="$LDFLAGS -Wl,--build-id"
+
+./configure CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS" LDFLAGS="$LDFLAGS" $CONFIGURE_FLAGS --enable-staticlink --prefix=/opt/deadbeef || {
     # store failed config.log in portable dir, which is mapped to
     # docker-artifacts when using docker.
     cp config.log ./portable/
@@ -78,6 +98,7 @@ sed -i 's/hardcode_into_libs=yes/hardcode_into_libs=no/g' libtool
 make clean
 make V=1 -j8 DESTDIR=`pwd`/static/$ARCH/deadbeef-$VERSION || exit 1
 export DESTDIR=`pwd`/static/$ARCH/deadbeef-$VERSION
+
 make DESTDIR=$DESTDIR install || exit 1
 mkdir -p $LIBRARY_PATH
 cp -r $LIBRARY_PATH/libBlocksRuntime.so* $DESTDIR/opt/deadbeef/lib/
@@ -90,7 +111,7 @@ find $DESTDIR/opt/deadbeef -type f -name "*.so" | while read i ; do ./scripts/gl
 
 MACHINE_TYPE=`uname -m`
 if [ ${MACHINE_TYPE} == 'x86_64' ]; then
-    echo "building pluginfo tool..."
+    echo "Building pluginfo tool..."
     cd tools/pluginfo
     make || exit 1
     cd ../../
