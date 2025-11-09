@@ -66,11 +66,17 @@ prefwin_init_playback_tab (GtkWidget *_prefwin) {
     // resume last session
     prefwin_set_toggle_button("resume_last_session", deadbeef->conf_get_int ("resume_last_session", 1));
 
+    // resume always paused
+    prefwin_set_toggle_button("resume_always_paused", deadbeef->conf_get_int ("resume_always_paused", 0));
+
     // add from archives
     prefwin_set_toggle_button("ignore_archives", deadbeef->conf_get_int ("ignore_archives", 1));
 
     // reset autostop
     prefwin_set_toggle_button("reset_autostop", deadbeef->conf_get_int ("playlist.stop_after_current_reset", 0));
+
+    // reset queue autostop
+    prefwin_set_toggle_button("reset_autostopqueue", deadbeef->conf_get_int ("playlist.stop_after_queue_reset", 0));
 
     // reset album autostop
     prefwin_set_toggle_button("reset_autostopalbum", deadbeef->conf_get_int ("playlist.stop_after_album_reset", 0));
@@ -150,6 +156,14 @@ on_resume_last_session_toggled         (GtkToggleButton *togglebutton,
 }
 
 void
+on_resume_always_paused_toggled         (GtkToggleButton *togglebutton,
+                                        gpointer         user_data)
+{
+    int active = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (togglebutton));
+    deadbeef->conf_set_int ("resume_always_paused", active);
+}
+
+void
 on_gui_plugin_changed                  (GtkComboBox     *combobox,
                                         gpointer         user_data)
 {
@@ -182,6 +196,13 @@ on_reset_autostop_toggled              (GtkToggleButton *togglebutton,
                                         gpointer         user_data)
 {
     deadbeef->conf_set_int ("playlist.stop_after_current_reset", gtk_toggle_button_get_active (togglebutton));
+}
+
+void
+on_reset_autostopqueue_toggled         (GtkToggleButton *togglebutton,
+                                        gpointer         user_data)
+{
+    deadbeef->conf_set_int ("playlist.stop_after_queue_reset", gtk_toggle_button_get_active (togglebutton));
 }
 
 void

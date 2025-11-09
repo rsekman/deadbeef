@@ -280,7 +280,7 @@ extern "C" {
 // default values for some common config variables should go here
 
 // network.ctmapping : content-type to plugin mapping
-#define DDB_DEFAULT_CTMAPPING "audio/mpeg {stdmpg ffmpeg} audio/x-mpeg {stdmpg ffmpeg} application/ogg {stdogg opus ffmpeg} audio/ogg {stdogg opus ffmpeg} audio/aac {aac ffmpeg} audio/aacp {aac ffmpeg} audio/x-m4a {aac ffmpeg} audio/wma {wma ffmpeg}"
+#define DDB_DEFAULT_CTMAPPING "audio/mpeg {stdmpg ffmpeg} audio/x-mpeg {stdmpg ffmpeg} application/ogg {stdogg opus stdflac ffmpeg} audio/ogg {stdogg opus stdflac ffmpeg} audio/aac {aac ffmpeg} audio/aacp {aac ffmpeg} audio/x-m4a {aac ffmpeg} audio/wma {wma ffmpeg}"
 
 ////////////////////////////
 // playlist structures
@@ -731,7 +731,7 @@ typedef struct ddb_fileadd_data_s {
 
 // since 1.8
 #if (DDB_API_LEVEL >= 8)
-enum {
+typedef enum {
     DDB_TF_CONTEXT_HAS_INDEX = 1,
     DDB_TF_CONTEXT_HAS_ID = 2,
     DDB_TF_CONTEXT_NO_DYNAMIC = 4, // skip dynamic fields (%playback_time%)
@@ -746,12 +746,16 @@ enum {
     // the caller supports text dimming functions
     DDB_TF_CONTEXT_TEXT_DIM = 16,
 #endif
-    // since 1.13
 #if (DDB_API_LEVEL >= 13)
     // the caller guarantees that metadata access is thread safe
     DDB_TF_CONTEXT_NO_MUTEX_LOCK = 32,
 #endif
-};
+#if (DDB_API_LEVEL >= 19)
+    // Allow faster metadata lookups, but without "override" support.
+    // This is mostly suitable for medialib tree formatting.
+    DDB_TF_CONTEXT_FAST_LOOKUP = 64,
+#endif
+} ddb_tf_flags_t;
 
 // since 1.10
 #if (DDB_API_LEVEL >= 10)
@@ -1807,8 +1811,16 @@ typedef struct {
 #endif
 
 #if (DDB_API_LEVEL >= 18)
-    // sort using title formatting v2, with more direct control over tf evaluation
+    /// sort using title formatting v2, with more direct control over tf evaluation
     void (*plt_sort_v3) (ddb_tf_context_t *tf_ctx, const char *tf_bytecode, int iter, int id, int order);
+
+    /// Get the root of scriptable tree, which contains dsp and encoder presets.
+    /// This is used by GUI plugins for preset editing.
+    ddb_scriptable_item_t * (*get_shared_scriptable_root)(void);
+
+    /// append zero-divided multivalue data to existing data
+    /// skip duplicates
+    void (*pl_append_meta_full) (ddb_playItem_t *it, const char *key, const char *value, int size);
 #endif
 } DB_functions_t;
 

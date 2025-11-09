@@ -56,7 +56,7 @@ _create_sorted_tree(
 
     ddb_tf_context_t ctx = {0};
     ctx._size = sizeof (ddb_tf_context_t);
-    ctx.flags = DDB_TF_CONTEXT_NO_MUTEX_LOCK | DDB_TF_CONTEXT_NO_DYNAMIC;
+    ctx.flags = DDB_TF_CONTEXT_NO_MUTEX_LOCK | DDB_TF_CONTEXT_NO_DYNAMIC | DDB_TF_CONTEXT_FAST_LOOKUP;
     ctx.plt = plt;
     ctx.iter = PL_MAIN;
 
@@ -157,9 +157,14 @@ _create_sorted_tree(
         }
 
         if (is_leaf) {
-            ddb_playItem_t *it = next;
-            next = deadbeef->pl_get_next(it, PL_MAIN);
-            deadbeef->pl_item_unref(it);
+            while (next != NULL) {
+                ddb_playItem_t *it = next;
+                next = deadbeef->pl_get_next(it, PL_MAIN);
+                deadbeef->pl_item_unref(it);
+                if (next == NULL || !selected || deadbeef->pl_is_selected(next)) {
+                    break;
+                }
+            }
         }
         else {
             // recurse into subgroups
@@ -175,7 +180,7 @@ _create_sorted_tree(
         char next_text[1000];
         ctx.it = next;
         deadbeef->tf_eval(&ctx, tfs[group_level], next_text, sizeof (next_text));
-        group_did_change = strcmp(group_text, next_text);
+        group_did_change = strcasecmp(group_text, next_text);
 
         if (group_did_change && level > 0) {
             break;
@@ -219,7 +224,7 @@ _create_tf_tree(medialib_source_t *source, ml_tree_item_t *root, int selected, c
         bcs[i] = deadbeef->tf_compile(bc);
         free (bc);
 
-        tf_sort_size += strlen(tfs[i]);
+        tf_sort_size += strlen(tfs[i]) + 1;
     }
     tf_sort_size++;
 
@@ -229,13 +234,14 @@ _create_tf_tree(medialib_source_t *source, ml_tree_item_t *root, int selected, c
         size_t len = strlen(tfs[i]);
         memcpy(curr, tfs[i], len);
         curr += len;
+        *curr++ = '/';
     }
     *curr = 0;
 
     if (needs_sort) {
         ddb_tf_context_t ctx = {
             ._size = sizeof (ddb_tf_context_t),
-            .flags = DDB_TF_CONTEXT_NO_DYNAMIC | DDB_TF_CONTEXT_NO_MUTEX_LOCK,
+            .flags = DDB_TF_CONTEXT_NO_DYNAMIC | DDB_TF_CONTEXT_NO_MUTEX_LOCK | DDB_TF_CONTEXT_FAST_LOOKUP,
             .plt = source->ml_playlist,
             .idx = -1,
         };
@@ -351,7 +357,7 @@ _create_sorted_folder_tree(ddb_playlist_t *plt, ml_tree_item_t *parent, int sele
 
     ddb_tf_context_t ctx = {0};
     ctx._size = sizeof (ddb_tf_context_t);
-    ctx.flags = DDB_TF_CONTEXT_NO_MUTEX_LOCK | DDB_TF_CONTEXT_NO_DYNAMIC;
+    ctx.flags = DDB_TF_CONTEXT_NO_MUTEX_LOCK | DDB_TF_CONTEXT_NO_DYNAMIC | DDB_TF_CONTEXT_FAST_LOOKUP;
     ctx.plt = plt;
     ctx.iter = PL_MAIN;
 
@@ -427,9 +433,14 @@ _create_sorted_folder_tree(ddb_playlist_t *plt, ml_tree_item_t *parent, int sele
         }
 
         if (is_leaf) {
-            ddb_playItem_t *it = next;
-            next = deadbeef->pl_get_next(it, PL_MAIN);
-            deadbeef->pl_item_unref(it);
+            while (next != NULL) {
+                ddb_playItem_t *it = next;
+                next = deadbeef->pl_get_next(it, PL_MAIN);
+                deadbeef->pl_item_unref(it);
+                if (next == NULL || !selected || deadbeef->pl_is_selected(next)) {
+                    break;
+                }
+            }
         }
         else {
             // recurse into subgroups

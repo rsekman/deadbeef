@@ -464,6 +464,10 @@ on_stop_after_current_activate         (GtkMenuItem     *menuitem,
                                         gpointer         user_data);
 
 void
+on_stop_after_queue_activate           (GtkMenuItem     *menuitem,
+                                        gpointer         user_data);
+
+void
 on_add_to_playback_queue1_activate     (GtkMenuItem     *menuitem,
                                         gpointer         user_data);
 
@@ -851,6 +855,10 @@ on_resume_last_session_toggled         (GtkToggleButton *togglebutton,
                                         gpointer         user_data);
 
 void
+on_resume_always_paused_toggled         (GtkToggleButton *togglebutton,
+                                        gpointer         user_data);
+
+void
 on_jump_to_current_track1_activate     (GtkMenuItem     *menuitem,
                                         gpointer         user_data);
 
@@ -1050,6 +1058,10 @@ on_convert16to24_toggled                (GtkToggleButton *togglebutton,
 
 void
 on_reset_autostop_toggled              (GtkToggleButton *togglebutton,
+                                        gpointer         user_data);
+
+void
+on_reset_autostopqueue_toggled         (GtkToggleButton *togglebutton,
                                         gpointer         user_data);
 
 void

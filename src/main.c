@@ -90,12 +90,11 @@
 #include "logger.h"
 #include "metacache.h"
 
-#ifdef OSX_APPBUNDLE
-#    include "scriptable/scriptable.h"
-#    include "scriptable/scriptable_dsp.h"
-#    include "scriptable/scriptable_encoder.h"
-//#include "scriptable/scriptable_tfquery.h"
-#endif
+#include "scriptable/scriptable.h"
+#include "scriptable/scriptable_dsp.h"
+#include "scriptable/scriptable_encoder.h"
+
+#include "scriptable/scriptable_shared.h"
 
 #include "undo/undomanager.h"
 
@@ -151,7 +150,7 @@ print_help (void) {
     fprintf (stdout, _ ("   --prev             Previous song in playlist\n"));
     fprintf (stdout, _ ("   --random           Random song in playlist\n"));
     fprintf (stdout, _ ("   --queue            Append file(s) to existing playlist\n"));
-    fprintf (stdout, _ ("   --gui PLUGIN       Tells which GUI plugin to use, default is \"GTK2\"\n"));
+    fprintf (stdout, _ ("   --gui PLUGIN       Tells which GUI plugin to use, default is \"GTK3\"\n"));
     fprintf (stdout, _ ("   --nowplaying FMT   Print formatted track name to stdout\n"));
     fprintf (
         stdout,
@@ -839,7 +838,7 @@ save_resume_state (void) {
     int playtrack = -1;
     int playlist = -1;
     playlist_t *plt = pl_get_playlist (trk);
-    int paused = (output->state () == DDB_PLAYBACK_STATE_PAUSED);
+    int paused = (output->state () == DDB_PLAYBACK_STATE_PAUSED) || (conf_get_int ("resume_always_paused", 0));
     if (trk && plt) {
         playlist = plt_get_idx_of (plt);
         playtrack = plt_get_item_idx (plt, trk, PL_MAIN);
@@ -1058,9 +1057,7 @@ _touch (const char *path) {
 static void
 _async_exit_handler(void) {
     // at this point we can simply do exit(0), but let's clean up for debugging
-#ifdef OSX_APPBUNDLE
     scriptableDeinitShared ();
-#endif
 
     pl_free (); // may access conf_*
     ddb_undomanager_free(ddb_undomanager_shared());
@@ -1638,9 +1635,7 @@ main (int argc, char *argv[]) {
 
     messagepump_init (); // required to push messages while handling commandline
 
-#ifdef OSX_APPBUNDLE
-    scriptableInitShared ();
-#endif
+    scriptableInitShared (deadbeef);
     if (plug_load_all ()) { // required to add files to playlist from commandline
         exit (-1);
     }
@@ -1669,10 +1664,8 @@ main (int argc, char *argv[]) {
 
     free (cmdline);
 
-#ifdef OSX_APPBUNDLE
-    scriptableDspLoadPresets (scriptableRootShared ());
-    scriptableEncoderLoadPresets (scriptableRootShared ());
-#endif
+    scriptableDspLoadPresets (scriptableGetSharedRoot());
+    scriptableEncoderLoadPresets (scriptableGetSharedRoot());
 
     streamer_init ();
 

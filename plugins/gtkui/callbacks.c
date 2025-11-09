@@ -46,7 +46,7 @@
 #include "search.h"
 #include "progress.h"
 #include "gtkui.h"
-#include "../libparser/parser.h"
+#include "../../shared/parser.h"
 #include "drawing.h"
 #include "eq.h"
 #include "undostack.h"
@@ -423,6 +423,14 @@ void
 on_stop_after_current_activate (GtkMenuItem *menuitem, gpointer user_data) {
     deadbeef->conf_set_int (
         "playlist.stop_after_current",
+        gtk_check_menu_item_get_active (GTK_CHECK_MENU_ITEM (menuitem)));
+    deadbeef->sendmessage (DB_EV_CONFIGCHANGED, 0, 0, 0);
+}
+
+void
+on_stop_after_queue_activate (GtkMenuItem *menuitem, gpointer user_data) {
+    deadbeef->conf_set_int (
+        "playlist.stop_after_queue",
         gtk_check_menu_item_get_active (GTK_CHECK_MENU_ITEM (menuitem)));
     deadbeef->sendmessage (DB_EV_CONFIGCHANGED, 0, 0, 0);
 }

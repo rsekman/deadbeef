@@ -1,10 +1,10 @@
-name: Build Debug for Linux
+name: Linux Debug Build
 
 on: [ push, pull_request ]
 
 jobs:
   build_linux:
-    name: CI for Linux
+    name: Linux Debug Build
     runs-on: ubuntu-latest
     container: ubuntu:20.04
     steps:
@@ -18,17 +18,29 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: true
+#    - name: Fetch static-deps
+#      run: ci_scripts/download-linux-static-deps.sh
     - name: Fetch static-deps
-      run: travis/download-linux-static-deps.sh
+      uses: dawidd6/action-download-artifact@v6
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        repo: DeaDBeeF-Player/deadbeef-staticdeps
+        workflow: linuxbuild.yml
+        name: ddb-static-deps-latest.tar.bz2
+        branch: master
+    - name: Unpack static-deps
+      run: |
+        mkdir -p static-deps
+        tar jxf ddb-static-deps-latest.tar.bz2 -C static-deps
     - name: Run Tests
       run: scripts/test.sh
     - name: Build for Linux
-      run: TRAVIS_OS_NAME=linux travis/build.sh --debug
+      run: BUILD_OS_NAME=linux ci_scripts/build.sh --debug
     - name: Upload for Linux
       env:
           gh_ed25519_key: ${{ secrets.GH_ENCRYPTED_ED25519_KEY }}
           gh_ed25519_iv: ${{ secrets.GH_ENCRYPTED_ED25519_IV }}
-      run: TRAVIS_OS_NAME=linux travis/upload.sh --debug
+      run: BUILD_OS_NAME=linux ci_scripts/upload.sh --debug
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
