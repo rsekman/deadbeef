@@ -1,6 +1,7 @@
+//
 /*
     DeaDBeeF -- the music player
-    Copyright (C) 2009-2015 Oleksiy Yakovenko and other contributors
+    Copyright (C) 2009-2025 Oleksiy Yakovenko and other contributors
 
     This software is provided 'as-is', without any express or implied
     warranty.  In no event will the authors be held liable for any damages
@@ -20,23 +21,39 @@
 
     3. This notice may not be removed or altered from any source distribution.
 */
-#import <Cocoa/Cocoa.h>
-#include <deadbeef/deadbeef.h>
 
-@class MediaLibraryItem;
-@class TrackPropertiesWindowController;
 
-@protocol TrackPropertiesWindowControllerDelegate
 
-- (void)trackPropertiesWindowControllerDidUpdateTracks:(TrackPropertiesWindowController *)windowController;
+#import "AddNewFieldWindowController.h"
+
+@interface AddNewFieldWindowController ()
+
+// new field panel
+@property (weak) IBOutlet NSTextField *addFieldName;
+@property (weak) IBOutlet NSTextField *addFieldAlreadyExists;
 
 @end
 
-@interface TrackPropertiesWindowController : NSWindowController<NSWindowDelegate,NSTableViewDelegate,NSTableViewDataSource>
+@implementation AddNewFieldWindowController
 
-@property (nonatomic,weak) id<TrackPropertiesWindowControllerDelegate> delegate;
+- (void)windowDidLoad {
+    [super windowDidLoad];
+    
+    self.addFieldName.stringValue =  @"";
+    self.addFieldAlreadyExists.hidden =  YES;
+}
 
-- (void)setPlaylist:(ddb_playlist_t *)playlist context:(ddb_action_context_t)context;
-- (void)setMediaLibraryItems:(NSArray<MediaLibraryItem *> *)mediaLibraryItems;
+- (IBAction)cancelAddFieldPanelAction:(id)sender {
+    [self.delegate addNewFieldDidEndWithResponse:NSModalResponseCancel];
+}
+
+- (IBAction)okAddFieldPanelAction:(id)sender {
+    if ([self.delegate addNewFieldAlreadyExists:self.addFieldName.stringValue]) {
+        self.addFieldAlreadyExists.hidden =  NO;
+        return;
+    }
+
+    [self.delegate addNewFieldDidEndWithResponse:NSModalResponseOK];
+}
 
 @end

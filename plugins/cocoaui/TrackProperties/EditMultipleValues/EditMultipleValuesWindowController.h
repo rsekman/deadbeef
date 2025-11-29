@@ -1,6 +1,6 @@
 /*
     DeaDBeeF -- the music player
-    Copyright (C) 2009-2015 Oleksiy Yakovenko and other contributors
+    Copyright (C) 2009-2025 Oleksiy Yakovenko and other contributors
 
     This software is provided 'as-is', without any express or implied
     warranty.  In no event will the authors be held liable for any damages
@@ -20,23 +20,22 @@
 
     3. This notice may not be removed or altered from any source distribution.
 */
-#import <Cocoa/Cocoa.h>
-#include <deadbeef/deadbeef.h>
 
-@class MediaLibraryItem;
-@class TrackPropertiesWindowController;
+#import <AppKit/AppKit.h>
 
-@protocol TrackPropertiesWindowControllerDelegate
+@protocol EditMultipleValuesWindowControllerDelegate
 
-- (void)trackPropertiesWindowControllerDidUpdateTracks:(TrackPropertiesWindowController *)windowController;
+- (void)editMultipleValuedDidEndWithResponse:(NSModalResponse)response;
 
 @end
 
-@interface TrackPropertiesWindowController : NSWindowController<NSWindowDelegate,NSTableViewDelegate,NSTableViewDataSource>
+@interface EditMultipleValuesWindowController : NSWindowController
 
-@property (nonatomic,weak) id<TrackPropertiesWindowControllerDelegate> delegate;
+@property (nonatomic,weak) id<EditMultipleValuesWindowControllerDelegate> delegate;
 
-- (void)setPlaylist:(ddb_playlist_t *)playlist context:(ddb_action_context_t)context;
-- (void)setMediaLibraryItems:(NSArray<MediaLibraryItem *> *)mediaLibraryItems;
+@property (weak) IBOutlet NSTextField *multiValueFieldName;
+@property (weak) IBOutlet NSTextView *multiValueSingle;
+@property (weak) IBOutlet NSTableView *multiValueTableView;
+@property (weak) IBOutlet NSTabView *multiValueTabView;
 
 @end

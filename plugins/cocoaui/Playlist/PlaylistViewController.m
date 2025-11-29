@@ -1012,26 +1012,24 @@ artwork_listener (ddb_artwork_listener_event_t event, void *user_data, int64_t p
             [lv.contentView drawGroup:grp];
         }];
     }
-    if (!image) {
+    if (image == nil) {
         // FIXME: the problem here is that if the cover is not found (yet) -- it won't draw anything, but the rect is already invalidated, and will come out as background color
         return;
     }
 
     NSRect drawRect;
 
-    int art_x = x + ART_PADDING_HORZ;
-    CGFloat min_y = (pinned ? viewportY+lv.contentView.grouptitle_height : y) + ART_PADDING_VERT;
-    CGFloat max_y = grp_next_y;
-
-    CGFloat ypos = min_y;
-    if (min_y + art_width + ART_PADDING_VERT >= max_y) {
-        ypos = max_y - art_width - ART_PADDING_VERT;
-    }
-
     NSSize size = image.size;
     NSSize desiredSize = [CoverManager.shared desiredSizeForImageSize:size availableSize:availableSize];
     CGSize drawSize = [self.view convertSizeFromBacking:desiredSize];
     
+    CGFloat art_x = x + ART_PADDING_HORZ;
+    CGFloat ypos = (pinned ? viewportY + lv.contentView.grouptitle_height : y) + ART_PADDING_VERT;
+
+    if (pinned && ypos + drawSize.height + ART_PADDING_VERT >= grp_next_y) {
+        ypos = grp_next_y - drawSize.height - ART_PADDING_VERT;
+    }
+
     if (size.width < size.height) {
         plt_col_info_t *c = &self.columns[(int)col];
         if (c->alignment == ColumnAlignmentCenter) {
@@ -1619,17 +1617,8 @@ artwork_listener (ddb_artwork_listener_event_t event, void *user_data, int64_t p
         }
         ddb_playItem_t *before = deadbeef->plt_get_item_for_idx (plt, cursor, PL_MAIN);
 
-        ssize_t count = 0;
-        if (holder.plt != NULL) {
-            ddb_playItem_t **items;
-            count = deadbeef->plt_get_items(holder.plt, &items);
-
-            [self dropPlayItems:(DdbListviewRow_t *)items before:(DdbListviewRow_t)before count:(int)count];
-
-            for (ssize_t i = 0; i < count; i++) {
-                deadbeef->pl_item_unref(items[i]);
-            }
-            free (items);
+        if (holder.count != 0) {
+            [self dropPlayItems:(DdbListviewRow_t *)holder.items before:(DdbListviewRow_t)before count:(int)holder.count];
         }
 
         if (before != NULL) {
@@ -1637,7 +1626,7 @@ artwork_listener (ddb_artwork_listener_event_t event, void *user_data, int64_t p
         }
 
         deadbeef->plt_deselect_all (plt);
-        deadbeef->plt_set_cursor (plt, PL_MAIN, (int)(cursor + count));
+        deadbeef->plt_set_cursor (plt, PL_MAIN, (int)(cursor + holder.count));
         deadbeef->sendmessage (DB_EV_PLAYLISTCHANGED, (uintptr_t)self.view, DDB_PLAYLIST_CHANGE_SELECTION, 0);
 
         // TODO: scroll to cursor

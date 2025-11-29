@@ -1,6 +1,6 @@
 /*
     DeaDBeeF -- the music player
-    Copyright (C) 2009-2015 Oleksiy Yakovenko and other contributors
+    Copyright (C) 2009-2025 Oleksiy Yakovenko and other contributors
 
     This software is provided 'as-is', without any express or implied
     warranty.  In no event will the authors be held liable for any damages
@@ -20,23 +20,27 @@
 
     3. This notice may not be removed or altered from any source distribution.
 */
-#import <Cocoa/Cocoa.h>
-#include <deadbeef/deadbeef.h>
 
-@class MediaLibraryItem;
-@class TrackPropertiesWindowController;
+#import "EditSingleValueWindowController.h"
 
-@protocol TrackPropertiesWindowControllerDelegate
-
-- (void)trackPropertiesWindowControllerDidUpdateTracks:(TrackPropertiesWindowController *)windowController;
+@interface EditSingleValueWindowController ()
 
 @end
 
-@interface TrackPropertiesWindowController : NSWindowController<NSWindowDelegate,NSTableViewDelegate,NSTableViewDataSource>
+@implementation EditSingleValueWindowController
 
-@property (nonatomic,weak) id<TrackPropertiesWindowControllerDelegate> delegate;
+- (void)windowDidLoad {
+    [super windowDidLoad];
 
-- (void)setPlaylist:(ddb_playlist_t *)playlist context:(ddb_action_context_t)context;
-- (void)setMediaLibraryItems:(NSArray<MediaLibraryItem *> *)mediaLibraryItems;
+}
+
+- (IBAction)cancelEditValuePanelAction:(id)sender {
+    [self.delegate editSingleValueDidEndWithResponse:NSModalResponseCancel];
+}
+
+- (IBAction)okEditValuePanelAction:(id)sender {
+    [self.delegate editSingleValueDidEndWithResponse:NSModalResponseOK];
+}
+
 
 @end
