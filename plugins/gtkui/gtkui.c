@@ -164,10 +164,10 @@ gtkui_dispatch_on_main (void (^block) (void)) {
 static void
 format_timestr (char *buf, int sz, float time) {
     time = roundf (time);
-    int daystotal = (int)time / (3600 * 24);
-    int hourtotal = ((int)time / 3600) % 24;
-    int mintotal = ((int)time / 60) % 60;
-    int sectotal = ((int)time) % 60;
+    int daystotal = (int)(int64_t)time / (3600 * 24);
+    int hourtotal = (int)((int64_t)time / 3600) % 24;
+    int mintotal = (int)((int64_t)time / 60) % 60;
+    int sectotal = (int)((int64_t)time) % 60;
 
     if (daystotal == 0) {
         snprintf (buf, sz, "%d:%02d:%02d", hourtotal, mintotal, sectotal);
@@ -1575,7 +1575,6 @@ gtkui_mainwin_init (void) {
         // check if any hotkeys were created manually (e.g. beta versions of 0.6)
         if (!deadbeef->conf_find ("hotkey.key", NULL)) {
             gtkui_set_default_hotkeys ();
-            gtkui_import_0_5_global_hotkeys ();
             DB_plugin_t *hkplug = deadbeef->plug_get_for_id ("hotkeys");
             if (hkplug) {
                 ((DB_hotkeys_plugin_t *)hkplug)->reset ();
