@@ -502,6 +502,9 @@ on_seekbar_motion_notify_event (GtkWidget *widget, GdkEventMotion *event) {
 
 gboolean
 on_seekbar_button_press_event (GtkWidget *widget, GdkEventButton *event) {
+    if (event->button != 1) {
+        return FALSE;
+    }
     DdbSeekbar *self = DDB_SEEKBAR (widget);
     DdbSeekbarPrivate *priv = DDB_SEEKBAR_GET_PRIVATE (self);
     if (deadbeef->get_output ()->state () == DDB_PLAYBACK_STATE_STOPPED) {
@@ -516,11 +519,14 @@ on_seekbar_button_press_event (GtkWidget *widget, GdkEventButton *event) {
     gtk_widget_get_allocation (widget, &a);
     priv->seekbar_move_x = event->x - a.x;
     gtk_widget_queue_draw (widget);
-    return FALSE;
+    return TRUE;
 }
 
 gboolean
 on_seekbar_button_release_event (GtkWidget *widget, GdkEventButton *event) {
+    if (event->button != 1) {
+        return FALSE;
+    }
     DdbSeekbar *self = DDB_SEEKBAR (widget);
     DdbSeekbarPrivate *priv = DDB_SEEKBAR_GET_PRIVATE (self);
     priv->seekbar_moving = 0;
@@ -539,7 +545,7 @@ on_seekbar_button_release_event (GtkWidget *widget, GdkEventButton *event) {
         deadbeef->pl_item_unref (trk);
     }
     gtk_widget_queue_draw (widget);
-    return FALSE;
+    return TRUE;
 }
 
 static gboolean
